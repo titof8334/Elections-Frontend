@@ -21,6 +21,12 @@ const routes = [
     meta: { title: 'Connexion', guestOnly: true }
   },
   {
+    path: '/auth/callback',
+    name: 'auth-callback',
+    component: () => import('@/views/CallbackView.vue'),
+    meta: { title: 'Connexion…' }
+  },
+  {
     path: '/scrutateur',
     name: 'scrutateur-home',
     component: () => import('@/views/ScrutateurHomeView.vue'),

@@ -1,24 +1,25 @@
 import axios from 'axios'
+import { getOidcUser } from '@/services/oidc'
 
 const api = axios.create({
   baseURL: '/api/v1',
   headers: { 'Content-Type': 'application/json' }
 })
 
-// Inject JWT token on every request
-api.interceptors.request.use(config => {
-  const token = localStorage.getItem('elections_token')
-  if (token) config.headers.Authorization = `Bearer ${token}`
+// Injecte le token Zitadel sur chaque requête
+api.interceptors.request.use(async config => {
+  const oidcUser = await getOidcUser()
+  if (oidcUser?.access_token) {
+    config.headers.Authorization = `Bearer ${oidcUser.access_token}`
+  }
   return config
 })
 
-// Handle 401 globally
+// Redirige vers /login sur 401
 api.interceptors.response.use(
   res => res,
   err => {
     if (err.response?.status === 401) {
-      localStorage.removeItem('elections_token')
-      localStorage.removeItem('elections_user')
       window.location.href = '/login'
     }
     return Promise.reject(err)
@@ -27,14 +28,16 @@ api.interceptors.response.use(
 
 // ===== AUTH =====
 export const authAPI = {
-  login: (email, password) => api.post('/auth/login', { email, password }),
+  // Retourne le profil applicatif de l'utilisateur connecté (rôle + bureaux)
+  // Le backend valide le token Zitadel et renvoie les données depuis sa propre DB
+  me: () => api.get('/auth/me'),
 }
 
 // ===== PUBLIC =====
 export const publicAPI = {
   getSynthese: () => api.get('/synthese'),
-  getBureaux: () => api.get('/bureaux'),
-  getBureau: (id) => api.get(`/bureaux/${id}`),
+  getBureaux:  () => api.get('/bureaux'),
+  getBureau:   (id) => api.get(`/bureaux/${id}`),
   getCandidats: () => api.get('/candidats'),
 }
 
@@ -50,17 +53,15 @@ export const scrutateurAPI = {
 // ===== ADMIN =====
 export const adminAPI = {
   // Bureaux
-  createBureau: (data) => api.post('/bureaux', data),
-  deleteBureau: (id) => api.delete(`/bureaux/${id}`),
-  assignScrutateur: (bureauId, userId) =>
-    api.post(`/bureaux/${bureauId}/scrutateurs/${userId}`),
-  removeScrutateur: (bureauId, userId) =>
-    api.delete(`/bureaux/${bureauId}/scrutateurs/${userId}`),
+  createBureau:      (data) => api.post('/bureaux', data),
+  deleteBureau:      (id) => api.delete(`/bureaux/${id}`),
+  assignScrutateur:  (bureauId, userId) => api.post(`/bureaux/${bureauId}/scrutateurs/${userId}`),
+  removeScrutateur:  (bureauId, userId) => api.delete(`/bureaux/${bureauId}/scrutateurs/${userId}`),
 
   // Users
-  getUsers: () => api.get('/users'),
-  createUser: (data) => api.post('/users', data),
-  deleteUser: (id) => api.delete(`/users/${id}`),
+  getUsers:    () => api.get('/users'),
+  createUser:  (data) => api.post('/users', data),
+  deleteUser:  (id) => api.delete(`/users/${id}`),
 
   // Candidats
   createCandidat: (data) => api.post('/candidats', data),

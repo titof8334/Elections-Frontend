@@ -1,49 +1,76 @@
 import { defineStore } from 'pinia'
-import { authAPI } from '@/api'
+import { login as oidcLogin, logout as oidcLogout, getOidcUser } from '@/services/oidc'
+import api from '@/api'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
-    token: localStorage.getItem('elections_token') || null,
-    user: JSON.parse(localStorage.getItem('elections_user') || 'null'),
+    // Utilisateur applicatif retourné par le backend (/auth/me)
+    user: null,
+    // Token d'accès Zitadel courant (utilisé par l'intercepteur axios)
+    accessToken: null,
     loading: false,
     error: null,
   }),
 
   getters: {
-    isAuthenticated: (state) => !!state.token,
+    isAuthenticated: (state) => !!state.accessToken && !!state.user,
     isAdmin: (state) => state.user?.role === 'admin',
     bureauxAutorisés: (state) => state.user?.bureaux || [],
   },
 
   actions: {
-    async login(email, password) {
+    /**
+     * Redirige vers la page de connexion Zitadel.
+     * @param {string} redirectTo - Route à atteindre après connexion
+     */
+    loginWithSSO(redirectTo = '/scrutateur') {
+      return oidcLogin(redirectTo)
+    },
+
+    /**
+     * Appelé après le retour du callback Zitadel.
+     * Charge le token OIDC puis récupère le profil applicatif depuis le backend.
+     */
+    async initFromOidc() {
       this.loading = true
       this.error = null
       try {
-        const response = await authAPI.login(email, password)
-        this.token = response.data.token
-        this.user = response.data.user
-        localStorage.setItem('elections_token', this.token)
-        localStorage.setItem('elections_user', JSON.stringify(this.user))
+        const oidcUser = await getOidcUser()
+        if (!oidcUser || oidcUser.expired) {
+          this.accessToken = null
+          this.user = null
+          return false
+        }
+
+        this.accessToken = oidcUser.access_token
+
+        // Récupère le rôle et les bureaux depuis le backend applicatif
+        const response = await api.get('/auth/me')
+        this.user = response.data // { role, bureaux, nom, prenom, ... }
+
         return true
       } catch (err) {
-        this.error = err.response?.data?.reason || 'Erreur de connexion'
+        this.error = err.response?.data?.reason || 'Erreur d\'initialisation de session'
+        this.accessToken = null
+        this.user = null
         return false
       } finally {
         this.loading = false
       }
     },
 
+    /**
+     * Déconnexion : invalide le token côté Zitadel et vide l'état local.
+     */
     logout() {
-      this.token = null
+      this.accessToken = null
       this.user = null
-      localStorage.removeItem('elections_token')
-      localStorage.removeItem('elections_user')
+      return oidcLogout()
     },
 
     canAccessBureau(bureauId) {
       if (this.isAdmin) return true
       return this.bureauxAutorisés.includes(bureauId)
     },
-  }
+  },
 })

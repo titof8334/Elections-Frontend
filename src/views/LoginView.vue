@@ -11,39 +11,22 @@
         </svg>
       </div>
       <h1 class="login-titre">Espace Scrutateur</h1>
-      <p class="login-sous-titre">Connectez-vous pour saisir les résultats</p>
+      <p class="login-sous-titre">Connectez-vous avec votre compte organisationnel</p>
 
-      <div v-if="auth.error" class="alert alert--erreur">{{ auth.error }}</div>
+      <div v-if="erreur" class="alert alert--erreur">{{ erreur }}</div>
 
-      <form @submit.prevent="handleLogin" class="login-form">
-        <div class="form-group">
-          <label class="form-label" for="email">Adresse e-mail</label>
-          <input
-            id="email"
-            v-model="email"
-            type="email"
-            class="form-control"
-            placeholder="scrutateur@elections.fr"
-            required
-            autocomplete="email"
-          />
-        </div>
-        <div class="form-group">
-          <label class="form-label" for="password">Mot de passe</label>
-          <input
-            id="password"
-            v-model="password"
-            type="password"
-            class="form-control"
-            placeholder="••••••••"
-            required
-            autocomplete="current-password"
-          />
-        </div>
-        <button type="submit" class="btn btn--primaire btn--lg" style="width: 100%" :disabled="auth.loading">
-          {{ auth.loading ? 'Connexion...' : 'Se connecter' }}
-        </button>
-      </form>
+      <button
+        class="btn btn--primaire btn--lg btn--sso"
+        :disabled="chargement"
+        @click="handleSSO"
+      >
+        <svg v-if="!chargement" class="sso-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+          <polyline points="10 17 15 12 10 7"/>
+          <line x1="15" y1="12" x2="3" y2="12"/>
+        </svg>
+        <span>{{ chargement ? 'Redirection…' : 'Se connecter via SSO' }}</span>
+      </button>
 
       <div class="login-retour">
         <router-link to="/" class="nav-link" style="color: var(--bleu-rep)">
@@ -56,17 +39,25 @@
 
 <script setup>
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
-const auth = useAuthStore()
-const router = useRouter()
-const email = ref('')
-const password = ref('')
+const auth       = useAuthStore()
+const route      = useRoute()
+const chargement = ref(false)
+const erreur     = ref(null)
 
-async function handleLogin() {
-  const ok = await auth.login(email.value, password.value)
-  if (ok) router.push('/scrutateur')
+async function handleSSO() {
+  chargement.value = true
+  erreur.value     = null
+  try {
+    const redirectTo = route.query.redirect || '/scrutateur'
+    await auth.loginWithSSO(redirectTo)
+    // La page est redirigée vers Zitadel — la suite se passe dans CallbackView
+  } catch (e) {
+    erreur.value     = 'Impossible de contacter le service d\'authentification.'
+    chargement.value = false
+  }
 }
 </script>
 
@@ -103,7 +94,19 @@ async function handleLogin() {
   margin-bottom: 1.75rem;
 }
 
-.login-form { text-align: left; }
+.btn--sso {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+}
+
+.sso-icon {
+  width: 1.2rem;
+  height: 1.2rem;
+  flex-shrink: 0;
+}
 
 .login-retour {
   margin-top: 1.5rem;
