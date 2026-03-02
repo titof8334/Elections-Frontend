@@ -26,6 +26,8 @@ export const userManager = new UserManager(oidcConfig)
  * @param {string} redirectTo - Route de l'app à atteindre après login (ex: '/scrutateur')
  */
 export function login(redirectTo = '/scrutateur') {
+  console.log("oidc.login");
+  console.log(oidcConfig);
   return userManager.signinRedirect({ state: redirectTo })
 }
 
