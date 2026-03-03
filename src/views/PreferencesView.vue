@@ -142,6 +142,8 @@ const bureauxLabel = computed(() => {
 async function sauvegarder() {
   messageSucces.value = ''
   messageErreur.value = ''
+  console.log("form");
+  console.log(form);
 
   const payload = {
     nom:           form.nom,
@@ -151,9 +153,11 @@ async function sauvegarder() {
     dispAssesseur: form.dispAssesseur,
     dispDelegue:   form.dispDelegue,
   }
+  console.log("payload");
+  console.log(payload);
 //  if (form.password) payload.password = form.password
 
-  const ok = await auth.mettreAJourProfil(user.id,payload)
+  const ok = await auth.mettreAJourProfil(user.value?.id,payload)
   console.log("ok")
   console.log(ok)
   if (ok) {
