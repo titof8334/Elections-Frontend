@@ -103,7 +103,7 @@ export const useAuthStore = defineStore('auth', {
       this.loading = true
       this.error = null
       try {
-        const res = await scrutateurAPI.updateUser(state.user?.id,data)
+        const res = await scrutateurAPI.updateUser(this.user?.id,data)
         this.user.nom = res.data.nom
         this.user.prenom = res.data.prenom
         return true
