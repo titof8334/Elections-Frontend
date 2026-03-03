@@ -58,7 +58,7 @@ export const adminAPI = {
   deleteBureau:      (id) => api.delete(`/bureaux/${id}`),
   assignScrutateur:  (bureauId, userId) => api.post(`/bureaux/${bureauId}/scrutateurs/${userId}`),
   removeScrutateur:  (bureauId, userId) => api.delete(`/bureaux/${bureauId}/scrutateurs/${userId}`),
- 
+
   // Users
   getUser:    (id) => api.get(`/users/${id}`),
   getUsers:    () => api.get('/users'),
