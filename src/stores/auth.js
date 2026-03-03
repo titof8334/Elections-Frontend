@@ -83,8 +83,8 @@ export const useAuthStore = defineStore('auth', {
       this.error = null
       try {
         console.log("Me id :");
-        console.log(state.user?.id);
-        return await adminAPI.getUser(state.user?.id);
+        console.log(this.user?.id);
+        return await adminAPI.getUser(this.user?.id);
       } catch (err) {
         console.log(err);
         this.error = err.response?.data?.reason || 'Impossible de récupérer le profil'
