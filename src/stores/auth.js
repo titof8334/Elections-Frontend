@@ -1,7 +1,6 @@
 import { defineStore } from 'pinia'
 import { login as oidcLogin, logout as oidcLogout, getOidcUser } from '@/services/oidc'
-import api from '@/api'
-import { authAPI, adminAPI } from '@/api'
+import api, {scrutateurAPI} from '@/api'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -84,7 +83,7 @@ export const useAuthStore = defineStore('auth', {
       try {
         console.log("Me id :");
         console.log(this.user?.id);
-        return await adminAPI.getUser(this.user?.id);
+        return await scrutateurAPI.getUser(this.user?.id);
       } catch (err) {
         console.log(err);
         this.error = err.response?.data?.reason || 'Impossible de récupérer le profil'
@@ -101,7 +100,7 @@ export const useAuthStore = defineStore('auth', {
       this.loading = true
       this.error = null
       try {
-        const res = await adminAPI.updateUser(state.user?.id,data)
+        const res = await scrutateurAPI.updateUser(state.user?.id,data)
         this.user.nom = res.data.nom
         this.user.prenom = res.data.prenom
         return true

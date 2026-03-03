@@ -96,7 +96,7 @@
 import { reactive, ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useElectionStore } from '@/stores/election'
-import {authAPI} from "@/api";
+import {scrutateurAPI} from "@/api";
 
 const auth = useAuthStore()
 const electionStore = useElectionStore()
@@ -162,7 +162,7 @@ async function sauvegarder() {
 onMounted(async () => {
   // Chargement parallèle : profil à jour depuis le backend + liste des bureaux
 
-  user.value = await useAuthStore().chargerMe()
+  user.value = await scrutateurAPI.chargerMe()
   const ok = await electionStore.chargerBureaux()
 
   if (!user.value || !ok) {
