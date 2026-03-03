@@ -278,6 +278,28 @@
             </label>
           </div>
         </div>
+        <div class="form-group">
+          <label class="form-label">Bureau d'affichage</label>
+          <select v-model="formUser.dispBureau" class="form-control">
+            <option :value="null">— Aucun —</option>
+            <option v-for="b in store.bureaux" :key="b.id" :value="b.id">
+              Bureau {{ b.numero }} — {{ b.nom }}
+            </option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Fonctions</label>
+          <div style="display: flex; flex-direction: column; gap: 0.5rem">
+            <label class="checkbox-label">
+              <input type="checkbox" v-model="formUser.dispAssesseur" />
+              Assesseur
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" v-model="formUser.dispDélégué" />
+              Délégué
+            </label>
+          </div>
+        </div>
         <div style="display: flex; gap: 0.75rem; justify-content: flex-end">
           <button class="btn btn--fantome" @click="showModalUser = false">Annuler</button>
           <button class="btn btn--primaire" @click="sauvegarderUser">
@@ -339,7 +361,7 @@ const bureauAssignation = ref(null)
 
 const formBureau = reactive({ id: null, numero: 1, nom: '', adresse: '', inscrits: 0 })
 const formCandidat = reactive({ id: null, nom: '', prenom: '', liste: '', couleur: '#003189', ordre: 1 })
-const formUser = reactive({ id: null, nom: '', email: '', password: '', role: 'scrutateur', bureauIds: [] })
+const formUser = reactive({ id: null, nom: '', email: '', password: '', role: 'scrutateur', bureauIds: [], dispBureau: null, dispAssesseur: false, dispDélégué: false })
 
 const scrutateurs = computed(() => users.value.filter(u => u.role === 'scrutateur'))
 
@@ -455,22 +477,41 @@ async function chargerUsers() {
 
 function ouvrirModalUser(user = null) {
   if (user) {
-    Object.assign(formUser, { id: user.id, nom: user.nom, email: user.email, password: '', role: user.role, bureauIds: [...(user.bureaux || [])] })
+    Object.assign(formUser, {
+      id: user.id,
+      nom: user.nom,
+      email: user.email,
+      password: '',
+      role: user.role,
+      bureauIds: [...(user.bureaux || [])],
+      dispBureau: user.dispBureau ?? null,
+      dispAssesseur: user.dispAssesseur ?? false,
+      dispDélégué: user.dispDélégué ?? false,
+    })
   } else {
-    Object.assign(formUser, { id: null, nom: '', email: '', password: '', role: 'scrutateur', bureauIds: [] })
+    Object.assign(formUser, { id: null, nom: '', email: '', password: '', role: 'scrutateur', bureauIds: [], dispBureau: null, dispAssesseur: false, dispDélégué: false })
   }
   showModalUser.value = true
 }
 
 async function sauvegarderUser() {
   try {
+    const payload = {
+      nom: formUser.nom,
+      email: formUser.email,
+      role: formUser.role,
+      bureauIds: formUser.bureauIds,
+      dispBureau: formUser.dispBureau || null,
+      dispAssesseur: formUser.dispAssesseur,
+      dispDélégué: formUser.dispDélégué,
+    }
+    if (formUser.password) payload.password = formUser.password
+
     if (formUser.id) {
-      const data = { nom: formUser.nom, email: formUser.email, role: formUser.role, bureauIds: formUser.bureauIds }
-      if (formUser.password) data.password = formUser.password
-      await adminAPI.updateUser(formUser.id, data)
+      await adminAPI.updateUser(formUser.id, payload)
       showMsg('Utilisateur modifié ✓')
     } else {
-      await adminAPI.createUser({ nom: formUser.nom, email: formUser.email, password: formUser.password, role: formUser.role, bureauIds: formUser.bureauIds })
+      await adminAPI.createUser(payload)
       showMsg('Utilisateur créé ✓')
     }
     await chargerUsers()

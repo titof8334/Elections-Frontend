@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { login as oidcLogin, logout as oidcLogout, getOidcUser } from '@/services/oidc'
 import api from '@/api'
+import { authAPI } from '@/api'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -71,6 +72,24 @@ export const useAuthStore = defineStore('auth', {
     canAccessBureau(bureauId) {
       if (this.isAdmin) return true
       return this.bureauxAutorisés.includes(bureauId)
+    },
+
+    /**
+     * Permet à l'utilisateur connecté de mettre à jour son propre profil.
+     */
+    async mettreAJourProfil(data) {
+      this.loading = true
+      this.error = null
+      try {
+        const res = await authAPI.updateMe(data)
+        this.user = res.data
+        return true
+      } catch (err) {
+        this.error = err.response?.data?.reason || 'Erreur lors de la mise à jour du profil'
+        return false
+      } finally {
+        this.loading = false
+      }
     },
   },
 })

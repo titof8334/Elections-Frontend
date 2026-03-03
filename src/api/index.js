@@ -30,7 +30,8 @@ api.interceptors.response.use(
 export const authAPI = {
   // Retourne le profil applicatif de l'utilisateur connecté (rôle + bureaux)
   // Le backend valide le token Zitadel et renvoie les données depuis sa propre DB
-  me: () => api.get('/auth/me'),
+  me:       () => api.get('/auth/me'),
+  updateMe: (data) => api.put('/auth/me', data),
 }
 
 // ===== PUBLIC =====

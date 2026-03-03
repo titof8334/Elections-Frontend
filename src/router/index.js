@@ -39,6 +39,12 @@ const routes = [
     meta: { title: 'Saisie dépouillement', requiresAuth: true }
   },
   {
+    path: '/preferences',
+    name: 'preferences',
+    component: () => import('@/views/PreferencesView.vue'),
+    meta: { title: 'Mes préférences', requiresAuth: true }
+  },
+  {
     path: '/admin',
     name: 'admin',
     component: () => import('@/views/AdminView.vue'),
