@@ -107,6 +107,9 @@ export const useAuthStore = defineStore('auth', {
       this.error = null
       try {
         data.id = this.user?.id;
+        data.role = '';
+        data.bureaux = [];
+        data.email = '';
         const res = await scrutateurAPI.updateUser(this.user?.id,data);
         console.log("res");
         console.log(res);
