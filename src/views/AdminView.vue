@@ -280,7 +280,7 @@
         </div>
         <div class="form-group">
           <label class="form-label">Bureau d'affichage</label>
-          <select v-model="formUser.dispBureau" class="form-control">
+          <select v-model="formUser.dispBureauId" class="form-control">
             <option :value="null">— Aucun —</option>
             <option v-for="b in store.bureaux" :key="b.id" :value="b.id">
               Bureau {{ b.numero }} — {{ b.nom }}
@@ -361,7 +361,7 @@ const bureauAssignation = ref(null)
 
 const formBureau = reactive({ id: null, numero: 1, nom: '', adresse: '', inscrits: 0 })
 const formCandidat = reactive({ id: null, nom: '', prenom: '', liste: '', couleur: '#003189', ordre: 1 })
-const formUser = reactive({ id: null, nom: '', email: '', password: '', role: 'scrutateur', bureauIds: [], dispBureau: null, dispAssesseur: false, dispDelegue: false })
+const formUser = reactive({ id: null, nom: '', email: '', password: '', role: 'scrutateur', bureauIds: [], dispBureauId: null, dispAssesseur: false, dispDelegue: false })
 
 const scrutateurs = computed(() => users.value.filter(u => u.role === 'scrutateur'))
 
@@ -484,12 +484,12 @@ function ouvrirModalUser(user = null) {
       password: '',
       role: user.role,
       bureauIds: [...(user.bureaux || [])],
-      dispBureau: user.dispBureau ?? null,
+      dispBureauId: user.dispBureauId ?? null,
       dispAssesseur: user.dispAssesseur ?? false,
       dispDelegue: user.dispDelegue ?? false,
     })
   } else {
-    Object.assign(formUser, { id: null, nom: '', email: '', password: '', role: 'scrutateur', bureauIds: [], dispBureau: null, dispAssesseur: false, dispDelegue: false })
+    Object.assign(formUser, { id: null, nom: '', email: '', password: '', role: 'scrutateur', bureauIds: [], dispBureauId: null, dispAssesseur: false, dispDelegue: false })
   }
   showModalUser.value = true
 }
@@ -501,7 +501,7 @@ async function sauvegarderUser() {
       email: formUser.email,
       role: formUser.role,
       bureauIds: formUser.bureauIds,
-      dispBureau: formUser.dispBureau || null,
+      dispBureauId: formUser.dispBureauId || null,
       dispAssesseur: formUser.dispAssesseur,
       dispDelegue: formUser.dispDelegue,
     }

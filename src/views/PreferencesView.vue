@@ -50,7 +50,7 @@
 
           <div class="form-group">
             <label class="form-label">Bureau </label>
-            <select v-model="form.dispBureau" class="form-control">
+            <select v-model="form.dispBureauId" class="form-control">
               <option :value="null">— Aucun —</option>
               <option v-for="b in electionStore.bureaux" :key="b.id" :value="b.id">
                 Bureau {{ b.numero }} — {{ b.nom }}
@@ -113,7 +113,7 @@ const form = reactive({
   nom: '',
   prenom: '',
   email: '',
-  dispBureau: null,
+  dispBureauId: null,
   dispAssesseur: false,
   dispDelegue: false,
 })
@@ -123,7 +123,7 @@ function remplirFormulaire() {
   form.nom           = user.value?.nom           ?? ''
   form.prenom           = user.value?.prenom           ?? ''
   form.email         = user.value?.email         ?? ''
-  form.dispBureau    = user.value?.dispBureau    ?? null
+  form.dispBureauId    = user.value?.dispBureauId    ?? null
   form.dispAssesseur = user.value?.dispAssesseur ?? false
   form.dispDelegue   = user.value?.dispDelegue   ?? false
 }
@@ -149,7 +149,7 @@ async function sauvegarder() {
     nom:           form.nom,
     prenom:        form.prenom,
     email:         form.email,
-    dispBureau:    form.dispBureau || null,
+    dispBureauId:    form.dispBureauId || null,
     dispAssesseur: form.dispAssesseur,
     dispDelegue:   form.dispDelegue,
   }
