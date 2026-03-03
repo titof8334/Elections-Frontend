@@ -100,10 +100,15 @@ export const useAuthStore = defineStore('auth', {
      * Permet à l'utilisateur connecté de mettre à jour son propre profil.
      */
     async mettreAJourProfil(data) {
+      console.log("post data");
+      console.log(data);
+      console.log(this.user?.id);
       this.loading = true
       this.error = null
       try {
-        const res = await scrutateurAPI.updateUser(this.user?.id,data)
+        const res = await scrutateurAPI.updateUser(this.user?.id,data);
+        console.log("res");
+        console.log(res);
         this.user.nom = res.data.nom
         this.user.prenom = res.data.prenom
         return true

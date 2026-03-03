@@ -49,7 +49,7 @@ export const scrutateurAPI = {
   upsertResultat: (bureauId, data) =>
     api.post(`/bureaux/${bureauId}/resultats`, data),
   getUser:    (id) => api.get(`/user/${id}`),
-  updateUser:    (id) => api.post(`/user/${id}`, data),
+  updateUser:    (id, data) => api.post(`/user/${id}`, data),
 }
 
 // ===== ADMIN =====
