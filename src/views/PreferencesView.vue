@@ -157,7 +157,7 @@ async function sauvegarder() {
   console.log(payload);
 //  if (form.password) payload.password = form.password
 
-  const ok = await auth.mettreAJourProfil(user.value?.id,payload)
+  const ok = await auth.mettreAJourProfil(payload)
   console.log("ok")
   console.log(ok)
   if (ok) {
