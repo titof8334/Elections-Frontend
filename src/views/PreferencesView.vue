@@ -162,7 +162,7 @@ async function sauvegarder() {
 onMounted(async () => {
   // Chargement parallèle : profil à jour depuis le backend + liste des bureaux
 
-  user.value = await scrutateurAPI.chargerMe()
+  user.value = await useAuthStore().chargerMe()
   const ok = await electionStore.chargerBureaux()
 
   if (!user.value || !ok) {
