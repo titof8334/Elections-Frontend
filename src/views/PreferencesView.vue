@@ -163,12 +163,12 @@ onMounted(async () => {
   // Chargement parallèle : profil à jour depuis le backend + liste des bureaux
 
   user.value = await useAuthStore().chargerMe()
-  const ok = await electionStore.chargerBureaux()
+  await electionStore.chargerBureaux()
   console.log("user.value");
   console.log(user.value);
   console.log("ok");
   console.log(ok);
-  if (!user.value || !ok) {
+  if (!user.value) {
     messageErreur.value = auth.error || 'Impossible de charger vos informations'
   }
 
