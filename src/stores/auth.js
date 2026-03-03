@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { login as oidcLogin, logout as oidcLogout, getOidcUser } from '@/services/oidc'
 import api from '@/api'
-import { authAPI } from '@/api'
+import { authAPI, adminAPI } from '@/api'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -75,14 +75,32 @@ export const useAuthStore = defineStore('auth', {
     },
 
     /**
+     * Rafraîchit le profil applicatif depuis le backend sans toucher au token OIDC.
+     * À appeler à l'ouverture de pages sensibles pour avoir des données à jour.
+     */
+    async chargerMe()  {
+      this.loading = true
+      this.error = null
+      try {
+        return await adminAPI.getUser(state.user?.id)
+      } catch (err) {
+        this.error = err.response?.data?.reason || 'Impossible de récupérer le profil'
+        return false
+      } finally {
+        this.loading = false
+      }
+    },
+
+    /**
      * Permet à l'utilisateur connecté de mettre à jour son propre profil.
      */
     async mettreAJourProfil(data) {
       this.loading = true
       this.error = null
       try {
-        const res = await authAPI.updateMe(data)
-        this.user = res.data
+        const res = await adminAPI.updateUser(state.user?.id,data)
+        this.user.nom = res.data.nom
+        this.user.prenom = res.data.prenom
         return true
       } catch (err) {
         this.error = err.response?.data?.reason || 'Erreur lors de la mise à jour du profil'

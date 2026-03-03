@@ -31,7 +31,6 @@ export const authAPI = {
   // Retourne le profil applicatif de l'utilisateur connecté (rôle + bureaux)
   // Le backend valide le token Zitadel et renvoie les données depuis sa propre DB
   me:       () => api.get('/auth/me'),
-  updateMe: (data) => api.put('/auth/me', data),
 }
 
 // ===== PUBLIC =====
@@ -61,6 +60,7 @@ export const adminAPI = {
   removeScrutateur:  (bureauId, userId) => api.delete(`/bureaux/${bureauId}/scrutateurs/${userId}`),
 
   // Users
+  getUser:    (id) => api.get(`/users/${id}`),
   getUsers:    () => api.get('/users'),
   createUser:  (data) => api.post('/users', data),
   updateUser:  (id, data) => api.put(`/users/${id}`, data),

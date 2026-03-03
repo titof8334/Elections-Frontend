@@ -9,7 +9,13 @@
       <div class="alert alert--succes" v-if="messageSucces">{{ messageSucces }}</div>
       <div class="alert alert--erreur" v-if="messageErreur">{{ messageErreur }}</div>
 
-      <div class="card" style="padding: 1.75rem">
+      <!-- Chargement initial -->
+      <div v-if="chargement" style="text-align: center; padding: 3rem 0">
+        <div class="spinner"></div>
+        <p style="margin-top: 1rem; color: var(--texte-doux)">Chargement de vos informations…</p>
+      </div>
+
+      <div v-else class="card" style="padding: 1.75rem">
         <form @submit.prevent="sauvegarder">
 
           <!-- Identité -->
@@ -36,17 +42,16 @@
           <hr class="pref-separator" />
 
           <!-- Affichage -->
-          <h3 class="section-pref">Affichage &amp; fonctions</h3>
+          <h3 class="section-pref">Disponibilité</h3>
 
           <div class="form-group">
-            <label class="form-label">Bureau d'affichage</label>
+            <label class="form-label">Bureau </label>
             <select v-model="form.dispBureau" class="form-control">
               <option :value="null">— Aucun —</option>
               <option v-for="b in electionStore.bureaux" :key="b.id" :value="b.id">
                 Bureau {{ b.numero }} — {{ b.nom }}
               </option>
             </select>
-            <p class="form-hint">Bureau qui sera mis en avant lors de votre connexion.</p>
           </div>
 
           <div class="form-group">
@@ -73,7 +78,7 @@
       </div>
 
       <!-- Info lecture seule -->
-      <div class="card" style="padding: 1.25rem 1.75rem; margin-top: 1.25rem; background: var(--creme)">
+      <div v-if="!chargement" class="card" style="padding: 1.25rem 1.75rem; margin-top: 1.25rem; background: var(--creme)">
         <p style="font-size: 0.85rem; color: var(--texte-doux); margin: 0">
           <strong>Rôle :</strong>
           <span class="badge" :class="auth.user?.role === 'admin' ? 'badge--rouge' : 'badge--bleu'" style="margin-left: 0.5rem">
@@ -91,13 +96,15 @@
 import { reactive, ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useElectionStore } from '@/stores/election'
+import {authAPI} from "@/api";
 
 const auth = useAuthStore()
 const electionStore = useElectionStore()
 
 const messageSucces = ref('')
 const messageErreur = ref('')
-
+const chargement = ref(true)   // masque le formulaire tant que les données ne sont pas prêtes
+const user = ref(undefined);
 const form = reactive({
   nom: '',
   email: '',
@@ -108,14 +115,13 @@ const form = reactive({
 })
 
 function remplirFormulaire() {
-  const u = auth.user
-  if (!u) return
-  form.nom          = u.nom          ?? ''
-  form.email        = u.email        ?? ''
-  form.password     = ''
-  form.dispBureau   = u.dispBureau   ?? null
-  form.dispAssesseur = u.dispAssesseur ?? false
-  form.dispDélégué  = u.dispDélégué  ?? false
+  if (!user.value) return
+  form.nom           = user.nom           ?? ''
+  form.email         = user.email         ?? ''
+  form.password      = ''
+  form.dispBureau    = user.dispBureau    ?? null
+  form.dispAssesseur = user.dispAssesseur ?? false
+  form.dispDélégué   = user.dispDélégué   ?? false
 }
 
 const bureauxLabel = computed(() => {
@@ -142,7 +148,7 @@ async function sauvegarder() {
   }
   if (form.password) payload.password = form.password
 
-  const ok = await auth.mettreAJourProfil(payload)
+  const ok = await auth.mettreAJourProfil(user.id,payload)
   if (ok) {
     form.password = ''
     messageSucces.value = 'Préférences enregistrées ✓'
@@ -154,8 +160,17 @@ async function sauvegarder() {
 }
 
 onMounted(async () => {
-  await electionStore.chargerBureaux()
+  // Chargement parallèle : profil à jour depuis le backend + liste des bureaux
+  user.value = await useAuthStore().chargerMe()
+  const ok = await electionStore.chargerBureaux()
+
+  if (!user.value || !ok) {
+    messageErreur.value = auth.error || 'Impossible de charger vos informations'
+  }
+
+  // Remplissage du formulaire avec les données fraîches
   remplirFormulaire()
+  chargement.value = false
 })
 </script>
 
