@@ -164,7 +164,10 @@ onMounted(async () => {
 
   user.value = await useAuthStore().chargerMe()
   const ok = await electionStore.chargerBureaux()
-
+  console.log("user.value");
+  console.log(user.value);
+  console.log("ok");
+  console.log(ok);
   if (!user.value || !ok) {
     messageErreur.value = auth.error || 'Impossible de charger vos informations'
   }
