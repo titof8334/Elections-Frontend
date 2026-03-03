@@ -83,10 +83,10 @@ export const useAuthStore = defineStore('auth', {
       try {
         console.log("Me id :");
         console.log(this.user?.id);
-        let user = await scrutateurAPI.getUser(this.user?.id);
+        let res = await scrutateurAPI.getUser(this.user?.id);
         console.log("me : ");
-        console.log(user);
-        return user;
+        console.log(res.data);
+        return res.data;
       } catch (err) {
         console.log(err);
         this.error = err.response?.data?.reason || 'Impossible de récupérer le profil'
