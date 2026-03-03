@@ -26,11 +26,11 @@
       </template>
 
       <template v-else>
-        <router-link to="/scrutateur" class="nav-link" :class="{ active: $route.path.startsWith('/scrutateur') }">
-          Mes bureaux
-        </router-link>
         <router-link to="/preferences" class="nav-link" :class="{ active: $route.name === 'preferences' }">
           Préférences
+        </router-link>
+        <router-link to="/scrutateur" class="nav-link" :class="{ active: $route.path.startsWith('/scrutateur') }">
+          Mes bureaux
         </router-link>
         <router-link v-if="auth.isAdmin" to="/admin" class="nav-link" :class="{ active: $route.name === 'admin' }">
           ⚙ Admin
