@@ -41,7 +41,7 @@ export const publicAPI = {
   getCandidats: () => api.get('/candidats'),
 }
 
-// ===== SCRUTATEUR =====
+// ===== DELEGUE =====
 export const scrutateurAPI = {
   updateBureau: (id, data) => api.put(`/bureaux/${id}`, data),
   upsertParticipation: (bureauId, heure, votants) =>
@@ -54,6 +54,7 @@ export const scrutateurAPI = {
 export const adminAPI = {
   // Bureaux
   createBureau:      (data) => api.post('/bureaux', data),
+  updateBureau:      (id, data) => api.put(`/bureaux/${id}`, data),
   deleteBureau:      (id) => api.delete(`/bureaux/${id}`),
   assignScrutateur:  (bureauId, userId) => api.post(`/bureaux/${bureauId}/scrutateurs/${userId}`),
   removeScrutateur:  (bureauId, userId) => api.delete(`/bureaux/${bureauId}/scrutateurs/${userId}`),
@@ -61,6 +62,7 @@ export const adminAPI = {
   // Users
   getUsers:    () => api.get('/users'),
   createUser:  (data) => api.post('/users', data),
+  updateUser:  (id, data) => api.put(`/users/${id}`, data),
   deleteUser:  (id) => api.delete(`/users/${id}`),
 
   // Candidats

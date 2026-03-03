@@ -75,7 +75,7 @@ src/
   - Résultats partiels et finaux par candidat
 
 ### Administration (compte admin requis)
-- Gestion des **bureaux** (création, suppression, assignation des scrutateurs)
+- Gestion des **bureaux** (création, suppression, assignation des délégués)
 - Gestion des **candidats/listes** (avec couleur et ordre d'affichage)
-- Gestion des **utilisateurs scrutateurs**
+- Gestion des **utilisateurs déléguéss**
 - **Réinitialisation** complète des données de vote

@@ -10,7 +10,7 @@
         <text x="20" y="24" text-anchor="middle" font-size="9" fill="#c9a84c" font-weight="bold">✓</text>
       </svg>
       <router-link to="/" class="navbar__title">
-        Élections <span>2024</span>
+        Élections municipales <span>2026</span>
       </router-link>
     </div>
 
@@ -21,7 +21,7 @@
 
       <template v-if="!auth.isAuthenticated">
         <router-link to="/login" class="nav-link nav-link--accent">
-          Espace scrutateur
+          Espace délégué
         </router-link>
       </template>
 

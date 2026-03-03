@@ -92,6 +92,12 @@ export const useElectionStore = defineStore('election', {
       return res.data
     },
 
+    async modifierBureau(id, data) {
+      const res = await adminAPI.updateBureau(id, data)
+      await this.chargerBureaux()
+      return res.data
+    },
+
     async supprimerBureau(id) {
       await adminAPI.deleteBureau(id)
       await this.chargerBureaux()

@@ -3,7 +3,7 @@
     <div class="container">
       <header class="page-header" style="margin-bottom: 2rem">
         <h1 class="section-title">Administration</h1>
-        <p class="section-subtitle">Gestion des bureaux, candidats et scrutateurs</p>
+        <p class="section-subtitle">Gestion des bureaux, candidats et délégués</p>
       </header>
 
       <div class="alert alert--succes" v-if="messageSucces">{{ messageSucces }}</div>
@@ -26,7 +26,7 @@
       <section v-show="activeTab === 'bureaux'" class="admin-panel">
         <div class="panel-header">
           <h2 class="section-title" style="font-size: 1.4rem">Bureaux de vote</h2>
-          <button class="btn btn--primaire btn--sm" @click="showModalBureau = true">+ Ajouter</button>
+          <button class="btn btn--primaire btn--sm" @click="ouvrirModalBureau()">+ Ajouter</button>
         </div>
 
         <div class="card" style="padding: 0; overflow: hidden">
@@ -37,7 +37,7 @@
                 <th>Nom</th>
                 <th>Adresse</th>
                 <th>Inscrits</th>
-                <th>Scrutateurs</th>
+                <th>Délégués</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -49,10 +49,11 @@
                 <td>{{ bureau.inscrits }}</td>
                 <td>
                   <button class="btn btn--fantome btn--sm" @click="ouvrirAssignation(bureau)">
-                    Gérer scrutateurs
+                    Gérer délégués
                   </button>
                 </td>
-                <td>
+                <td style="display: flex; gap: 0.5rem">
+                  <button class="btn btn--fantome btn--sm" @click="ouvrirModalBureau(bureau)">Modifier</button>
                   <button class="btn btn--danger btn--sm" @click="supprimerBureau(bureau.id)">
                     Supprimer
                   </button>
@@ -112,8 +113,8 @@
       <!-- ===== UTILISATEURS ===== -->
       <section v-show="activeTab === 'utilisateurs'" class="admin-panel">
         <div class="panel-header">
-          <h2 class="section-title" style="font-size: 1.4rem">Scrutateurs</h2>
-          <button class="btn btn--primaire btn--sm" @click="showModalUser = true">+ Ajouter</button>
+          <h2 class="section-title" style="font-size: 1.4rem">Délégués</h2>
+          <button class="btn btn--primaire btn--sm" @click="ouvrirModalUser()">+ Ajouter</button>
         </div>
 
         <div class="card" style="padding: 0; overflow: hidden">
@@ -137,7 +138,8 @@
                   </span>
                 </td>
                 <td>{{ user.bureaux.length }} bureau(x)</td>
-                <td>
+                <td style="display: flex; gap: 0.5rem">
+                  <button class="btn btn--fantome btn--sm" @click="ouvrirModalUser(user)">Modifier</button>
                   <button
                     class="btn btn--danger btn--sm"
                     @click="supprimerUser(user.id)"
@@ -175,7 +177,7 @@
     <!-- ===== MODAL BUREAU ===== -->
     <div class="modal-overlay" v-if="showModalBureau" @click.self="showModalBureau = false">
       <div class="modal-box">
-        <h2 class="modal-titre">Nouveau bureau</h2>
+        <h2 class="modal-titre">{{ formBureau.id ? 'Modifier le bureau' : 'Nouveau bureau' }}</h2>
         <div class="form-group">
           <label class="form-label">Numéro</label>
           <input v-model.number="formBureau.numero" type="number" min="1" class="form-control" />
@@ -194,7 +196,9 @@
         </div>
         <div style="display: flex; gap: 0.75rem; justify-content: flex-end">
           <button class="btn btn--fantome" @click="showModalBureau = false">Annuler</button>
-          <button class="btn btn--primaire" @click="creerBureau">Créer</button>
+          <button class="btn btn--primaire" @click="sauvegarderBureau">
+            {{ formBureau.id ? 'Modifier' : 'Créer' }}
+          </button>
         </div>
       </div>
     </div>
@@ -242,7 +246,7 @@
     <!-- ===== MODAL USER ===== -->
     <div class="modal-overlay" v-if="showModalUser" @click.self="showModalUser = false">
       <div class="modal-box">
-        <h2 class="modal-titre">Nouvel utilisateur</h2>
+        <h2 class="modal-titre">{{ formUser.id ? 'Modifier l\'utilisateur' : 'Nouvel utilisateur' }}</h2>
         <div class="form-group">
           <label class="form-label">Nom complet</label>
           <input v-model="formUser.nom" type="text" class="form-control" />
@@ -252,13 +256,16 @@
           <input v-model="formUser.email" type="email" class="form-control" />
         </div>
         <div class="form-group">
-          <label class="form-label">Mot de passe</label>
+          <label class="form-label">
+            Mot de passe
+            <span v-if="formUser.id" style="font-weight: 400; color: var(--texte-doux); font-size: 0.85rem"> — laisser vide pour ne pas modifier</span>
+          </label>
           <input v-model="formUser.password" type="password" class="form-control" />
         </div>
         <div class="form-group">
           <label class="form-label">Rôle</label>
           <select v-model="formUser.role" class="form-control">
-            <option value="scrutateur">Scrutateur</option>
+            <option value="scrutateur">Délégué</option>
             <option value="admin">Administrateur</option>
           </select>
         </div>
@@ -273,7 +280,9 @@
         </div>
         <div style="display: flex; gap: 0.75rem; justify-content: flex-end">
           <button class="btn btn--fantome" @click="showModalUser = false">Annuler</button>
-          <button class="btn btn--primaire" @click="creerUser">Créer</button>
+          <button class="btn btn--primaire" @click="sauvegarderUser">
+            {{ formUser.id ? 'Modifier' : 'Créer' }}
+          </button>
         </div>
       </div>
     </div>
@@ -281,7 +290,7 @@
     <!-- ===== MODAL ASSIGNATION ===== -->
     <div class="modal-overlay" v-if="showModalAssignation" @click.self="showModalAssignation = false">
       <div class="modal-box">
-        <h2 class="modal-titre">Scrutateurs — Bureau {{ bureauAssignation?.numero }}</h2>
+        <h2 class="modal-titre">Délégués — Bureau {{ bureauAssignation?.numero }}</h2>
         <p style="font-size: 0.9rem; color: var(--texte-doux); margin-bottom: 1rem">
           {{ bureauAssignation?.nom }}
         </p>
@@ -328,9 +337,9 @@ const showModalUser = ref(false)
 const showModalAssignation = ref(false)
 const bureauAssignation = ref(null)
 
-const formBureau = reactive({ numero: 1, nom: '', adresse: '', inscrits: 0 })
+const formBureau = reactive({ id: null, numero: 1, nom: '', adresse: '', inscrits: 0 })
 const formCandidat = reactive({ id: null, nom: '', prenom: '', liste: '', couleur: '#003189', ordre: 1 })
-const formUser = reactive({ nom: '', email: '', password: '', role: 'scrutateur', bureauIds: [] })
+const formUser = reactive({ id: null, nom: '', email: '', password: '', role: 'scrutateur', bureauIds: [] })
 
 const scrutateurs = computed(() => users.value.filter(u => u.role === 'scrutateur'))
 
@@ -341,12 +350,25 @@ function showMsg(msg, type = 'succes') {
 }
 
 // ===== BUREAUX =====
-async function creerBureau() {
+function ouvrirModalBureau(bureau = null) {
+  if (bureau) {
+    Object.assign(formBureau, { id: bureau.id, numero: bureau.numero, nom: bureau.nom, adresse: bureau.adresse, inscrits: bureau.inscrits })
+  } else {
+    Object.assign(formBureau, { id: null, numero: store.bureaux.length + 1, nom: '', adresse: '', inscrits: 0 })
+  }
+  showModalBureau.value = true
+}
+
+async function sauvegarderBureau() {
   try {
-    await store.creerBureau({ ...formBureau })
+    if (formBureau.id) {
+      await store.modifierBureau(formBureau.id, { numero: formBureau.numero, nom: formBureau.nom, adresse: formBureau.adresse, inscrits: formBureau.inscrits })
+      showMsg('Bureau modifié ✓')
+    } else {
+      await store.creerBureau({ numero: formBureau.numero, nom: formBureau.nom, adresse: formBureau.adresse, inscrits: formBureau.inscrits })
+      showMsg('Bureau créé ✓')
+    }
     showModalBureau.value = false
-    Object.assign(formBureau, { numero: 1, nom: '', adresse: '', inscrits: 0 })
-    showMsg('Bureau créé ✓')
   } catch (e) {
     showMsg(e.response?.data?.reason || 'Erreur', 'erreur')
   }
@@ -431,16 +453,35 @@ async function chargerUsers() {
   } catch {}
 }
 
-async function creerUser() {
+function ouvrirModalUser(user = null) {
+  if (user) {
+    Object.assign(formUser, { id: user.id, nom: user.nom, email: user.email, password: '', role: user.role, bureauIds: [...(user.bureaux || [])] })
+  } else {
+    Object.assign(formUser, { id: null, nom: '', email: '', password: '', role: 'scrutateur', bureauIds: [] })
+  }
+  showModalUser.value = true
+}
+
+async function sauvegarderUser() {
   try {
-    await adminAPI.createUser({ ...formUser })
+    if (formUser.id) {
+      const data = { nom: formUser.nom, email: formUser.email, role: formUser.role, bureauIds: formUser.bureauIds }
+      if (formUser.password) data.password = formUser.password
+      await adminAPI.updateUser(formUser.id, data)
+      showMsg('Utilisateur modifié ✓')
+    } else {
+      await adminAPI.createUser({ nom: formUser.nom, email: formUser.email, password: formUser.password, role: formUser.role, bureauIds: formUser.bureauIds })
+      showMsg('Utilisateur créé ✓')
+    }
     await chargerUsers()
     showModalUser.value = false
-    Object.assign(formUser, { nom: '', email: '', password: '', role: 'scrutateur', bureauIds: [] })
-    showMsg('Utilisateur créé ✓')
   } catch (e) {
     showMsg(e.response?.data?.reason || 'Erreur', 'erreur')
   }
+}
+
+async function creerUser() {
+  await sauvegarderUser()
 }
 
 async function supprimerUser(id) {
