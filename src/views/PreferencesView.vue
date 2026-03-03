@@ -22,22 +22,26 @@
           <h3 class="section-pref">Identité</h3>
 
           <div class="form-group">
-            <label class="form-label">Nom complet</label>
+            <label class="form-label">Nom</label>
             <input v-model="form.nom" type="text" class="form-control" placeholder="Votre nom" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Prénom</label>
+            <input v-model="form.prenom" type="text" class="form-control" placeholder="Votre prénom" required />
           </div>
 
           <div class="form-group">
             <label class="form-label">Email</label>
-            <input v-model="form.email" type="email" class="form-control" placeholder="votre@email.fr" required />
+            <input v-model="form.email" type="email" class="form-control" placeholder="votre@email.fr" disabled />
           </div>
 
-          <div class="form-group">
+          <!--div class="form-group">
             <label class="form-label">
               Nouveau mot de passe
               <span style="font-weight: 400; color: var(--texte-doux); font-size: 0.85rem"> — laisser vide pour ne pas modifier</span>
             </label>
             <input v-model="form.password" type="password" class="form-control" autocomplete="new-password" />
-          </div>
+          </div-->
 
           <hr class="pref-separator" />
 
@@ -107,8 +111,8 @@ const chargement = ref(true)   // masque le formulaire tant que les données ne 
 const user = ref(undefined);
 const form = reactive({
   nom: '',
+  prenom: '',
   email: '',
-  password: '',
   dispBureau: null,
   dispAssesseur: false,
   dispDelegue: false,
@@ -117,8 +121,8 @@ const form = reactive({
 function remplirFormulaire() {
   if (!user.value) return
   form.nom           = user.value?.nom           ?? ''
+  form.prenom           = user.value?.prenom           ?? ''
   form.email         = user.value?.email         ?? ''
-  form.password      = ''
   form.dispBureau    = user.value?.dispBureau    ?? null
   form.dispAssesseur = user.value?.dispAssesseur ?? false
   form.dispDelegue   = user.value?.dispDelegue   ?? false
@@ -141,14 +145,17 @@ async function sauvegarder() {
 
   const payload = {
     nom:           form.nom,
+    prenom:        form.prenom,
     email:         form.email,
     dispBureau:    form.dispBureau || null,
     dispAssesseur: form.dispAssesseur,
     dispDelegue:   form.dispDelegue,
   }
-  if (form.password) payload.password = form.password
+//  if (form.password) payload.password = form.password
 
   const ok = await auth.mettreAJourProfil(user.id,payload)
+  console.log("ok")
+  console.log(ok)
   if (ok) {
     form.password = ''
     messageSucces.value = 'Préférences enregistrées ✓'
