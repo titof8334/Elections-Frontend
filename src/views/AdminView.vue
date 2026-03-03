@@ -295,7 +295,7 @@
               Assesseur
             </label>
             <label class="checkbox-label">
-              <input type="checkbox" v-model="formUser.dispDélégué" />
+              <input type="checkbox" v-model="formUser.dispDelegue" />
               Délégué
             </label>
           </div>
@@ -361,7 +361,7 @@ const bureauAssignation = ref(null)
 
 const formBureau = reactive({ id: null, numero: 1, nom: '', adresse: '', inscrits: 0 })
 const formCandidat = reactive({ id: null, nom: '', prenom: '', liste: '', couleur: '#003189', ordre: 1 })
-const formUser = reactive({ id: null, nom: '', email: '', password: '', role: 'scrutateur', bureauIds: [], dispBureau: null, dispAssesseur: false, dispDélégué: false })
+const formUser = reactive({ id: null, nom: '', email: '', password: '', role: 'scrutateur', bureauIds: [], dispBureau: null, dispAssesseur: false, dispDelegue: false })
 
 const scrutateurs = computed(() => users.value.filter(u => u.role === 'scrutateur'))
 
@@ -486,10 +486,10 @@ function ouvrirModalUser(user = null) {
       bureauIds: [...(user.bureaux || [])],
       dispBureau: user.dispBureau ?? null,
       dispAssesseur: user.dispAssesseur ?? false,
-      dispDélégué: user.dispDélégué ?? false,
+      dispDelegue: user.dispDelegue ?? false,
     })
   } else {
-    Object.assign(formUser, { id: null, nom: '', email: '', password: '', role: 'scrutateur', bureauIds: [], dispBureau: null, dispAssesseur: false, dispDélégué: false })
+    Object.assign(formUser, { id: null, nom: '', email: '', password: '', role: 'scrutateur', bureauIds: [], dispBureau: null, dispAssesseur: false, dispDelegue: false })
   }
   showModalUser.value = true
 }
@@ -503,7 +503,7 @@ async function sauvegarderUser() {
       bureauIds: formUser.bureauIds,
       dispBureau: formUser.dispBureau || null,
       dispAssesseur: formUser.dispAssesseur,
-      dispDélégué: formUser.dispDélégué,
+      dispDelegue: formUser.dispDelegue,
     }
     if (formUser.password) payload.password = formUser.password
 

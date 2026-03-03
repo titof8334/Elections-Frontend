@@ -62,7 +62,7 @@
                 Assesseur
               </label>
               <label class="checkbox-label">
-                <input type="checkbox" v-model="form.dispDélégué" />
+                <input type="checkbox" v-model="form.dispDelegue" />
                 Délégué
               </label>
             </div>
@@ -111,17 +111,17 @@ const form = reactive({
   password: '',
   dispBureau: null,
   dispAssesseur: false,
-  dispDélégué: false,
+  dispDelegue: false,
 })
 
 function remplirFormulaire() {
   if (!user.value) return
-  form.nom           = user.nom           ?? ''
-  form.email         = user.email         ?? ''
+  form.nom           = user.value?.nom           ?? ''
+  form.email         = user.value?.email         ?? ''
   form.password      = ''
-  form.dispBureau    = user.dispBureau    ?? null
-  form.dispAssesseur = user.dispAssesseur ?? false
-  form.dispDélégué   = user.dispDélégué   ?? false
+  form.dispBureau    = user.value?.dispBureau    ?? null
+  form.dispAssesseur = user.value?.dispAssesseur ?? false
+  form.dispDelegue   = user.value?.dispDelegue   ?? false
 }
 
 const bureauxLabel = computed(() => {
@@ -144,7 +144,7 @@ async function sauvegarder() {
     email:         form.email,
     dispBureau:    form.dispBureau || null,
     dispAssesseur: form.dispAssesseur,
-    dispDélégué:   form.dispDélégué,
+    dispDelegue:   form.dispDelegue,
   }
   if (form.password) payload.password = form.password
 
