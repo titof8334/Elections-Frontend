@@ -14,7 +14,7 @@ export const useAuthStore = defineStore('auth', {
 
   getters: {
     isAuthenticated: (state) => !!state.accessToken && !!state.user,
-    isAdmin: (state) => state.user?.role === 'admin',
+    isAdmin: (state) => state.user?.isAdmin === true,
     bureauxAutorisés: (state) => state.user?.bureaux || [],
   },
 
@@ -110,6 +110,7 @@ export const useAuthStore = defineStore('auth', {
         data.role = '';
         data.bureaux = [];
         data.email = '';
+        data.isAdmin = false;
         const res = await scrutateurAPI.updateUser(this.user?.id,data);
         console.log("res");
         console.log(res);

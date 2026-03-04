@@ -133,7 +133,7 @@
                 <td><strong>{{ user.nom }}</strong></td>
                 <td>{{ user.email }}</td>
                 <td>
-                  <span class="badge" :class="user.role === 'admin' ? 'badge--rouge' : 'badge--bleu'">
+                  <span class="badge" :class="user.isAdmin ? 'badge--rouge' : 'badge--bleu'">
                     {{ user.role }}
                   </span>
                 </td>
@@ -265,8 +265,9 @@
         <div class="form-group">
           <label class="form-label">Rôle</label>
           <select v-model="formUser.role" class="form-control">
-            <option value="scrutateur">Délégué</option>
-            <option value="admin">Administrateur</option>
+            <option value="aucun">Aucun</option>
+            <option value="assesseur">Assesseur</option>
+            <option value="delegue">Délégué</option>
           </select>
         </div>
         <div class="form-group">
