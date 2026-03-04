@@ -139,7 +139,7 @@
                   </span>
                 </td>
                 <td>{{ user.bureaux.length }} bureau(x)</td>
-                <td>{{user.dispBureauId}} {{ user.dispAssesseur ? 'Assesseur' : ''}} {{ user.dispDelegue ? 'Délégué' : ''}}</td>
+                <td>{{ nomBureau(user.dispBureauId) }} {{ user.dispAssesseur ? 'Assesseur' : ''}}{{ user.dispAssesseur && user.dispDelegue ? ' / ' : ' '}}{{ user.dispDelegue ? 'Délégué' : ''}}</td>
                 <td style="display: flex; gap: 0.5rem">
                   <button class="btn btn--fantome btn--sm" @click="ouvrirModalUser(user)">Modifier</button>
                   <button
@@ -531,6 +531,12 @@ async function sauvegarderUser() {
   } catch (e) {
     showMsg(e.response?.data?.reason || 'Erreur', 'erreur')
   }
+}
+
+function nomBureau(id) {
+  const bureau = store.bureaux.find(b => b.id === id)
+  if (!bureau) return ''
+  return `${bureau.numero} - ${bureau.nom}`
 }
 
 async function creerUser() {
