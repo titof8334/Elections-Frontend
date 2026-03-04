@@ -85,7 +85,7 @@
       <div v-if="!chargement" class="card" style="padding: 1.25rem 1.75rem; margin-top: 1.25rem; background: var(--creme)">
         <p style="font-size: 0.85rem; color: var(--texte-doux); margin: 0">
           <strong>Rôle :</strong>
-          <span class="badge" :class="auth.user?.role === 'admin' ? 'badge--rouge' : 'badge--bleu'" style="margin-left: 0.5rem">
+          <span class="badge" :class="auth.user?.isAdmin ? 'badge--rouge' : 'badge--bleu'" style="margin-left: 0.5rem">
             {{ auth.user?.role }}
           </span>
           &nbsp;·&nbsp;
