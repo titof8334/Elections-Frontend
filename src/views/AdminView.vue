@@ -124,7 +124,8 @@
                 <th>Nom</th>
                 <th>Email</th>
                 <th>Rôle</th>
-                <th>Bureaux assignés</th>
+                <th>Bureau(x) assigné(s)</th>
+                <th>Disponibilité</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -134,10 +135,11 @@
                 <td>{{ user.email }}</td>
                 <td>
                   <span class="badge" :class="user.isAdmin ? 'badge--rouge' : 'badge--bleu'">
-                    {{ user.role }}
+                    {{ user.role === 'scrutateur' ? 'Aucun' : user.role }}
                   </span>
                 </td>
                 <td>{{ user.bureaux.length }} bureau(x)</td>
+                <td>{{user.dispBureauId}} {{ user.dispAssesseur ? 'Assesseur' : ''}} {{ user.dispDelegue ? 'Délégué' : ''}}</td>
                 <td style="display: flex; gap: 0.5rem">
                   <button class="btn btn--fantome btn--sm" @click="ouvrirModalUser(user)">Modifier</button>
                   <button
@@ -362,9 +364,9 @@ const bureauAssignation = ref(null)
 
 const formBureau = reactive({ id: null, numero: 1, nom: '', adresse: '', inscrits: 0 })
 const formCandidat = reactive({ id: null, nom: '', prenom: '', liste: '', couleur: '#003189', ordre: 1 })
-const formUser = reactive({ id: null, nom: '', email: '', password: '', role: 'scrutateur', bureauIds: [], dispBureauId: null, dispAssesseur: false, dispDelegue: false })
+const formUser = reactive({ id: null, nom: '', email: '', password: '', role: 'aucun', bureauIds: [], dispBureauId: null, dispAssesseur: false, dispDelegue: false })
 
-const scrutateurs = computed(() => users.value.filter(u => u.role === 'scrutateur'))
+const scrutateurs = computed(() => users.value.filter(u => u.role === 'assesseur' || u.role === 'delegue' ))
 
 function showMsg(msg, type = 'succes') {
   if (type === 'succes') { messageSucces.value = msg; messageErreur.value = '' }
@@ -490,7 +492,7 @@ function ouvrirModalUser(user = null) {
       dispDelegue: user.dispDelegue ?? false,
     })
   } else {
-    Object.assign(formUser, { id: null, nom: '', email: '', password: '', role: 'scrutateur', bureauIds: [], dispBureauId: null, dispAssesseur: false, dispDelegue: false })
+    Object.assign(formUser, { id: null, nom: '', email: '', password: '', role: 'aucun', bureauIds: [], dispBureauId: null, dispAssesseur: false, dispDelegue: false })
   }
   showModalUser.value = true
 }
