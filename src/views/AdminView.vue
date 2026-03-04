@@ -272,7 +272,16 @@
             <option value="delegue">Délégué</option>
           </select>
         </div>
-        <div class="form-group">
+        <div v-if="formUser.role === 'assesseur'" class="form-group">
+          <label class="form-label">Bureau assigné</label>
+          <div class="bureaux-checkboxes">
+            <label v-for="b in store.bureaux" :key="b.id" class="checkbox-label">
+              <input type="checkbox" :value="b.id" v-model="formUser.bureauIds" />
+              Bureau {{ b.numero }} — {{ b.nom }}
+            </label>
+          </div>
+        </div>
+        <div v-if="formUser.role === 'delegue'" class="form-group">
           <label class="form-label">Bureaux assignés</label>
           <div class="bureaux-checkboxes">
             <label v-for="b in store.bureaux" :key="b.id" class="checkbox-label">
@@ -282,7 +291,7 @@
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">Bureau d'affichage</label>
+          <label class="form-label">Bureau privilégié</label>
           <select v-model="formUser.dispBureauId" class="form-control">
             <option :value="null">— Aucun —</option>
             <option v-for="b in store.bureaux" :key="b.id" :value="b.id">
