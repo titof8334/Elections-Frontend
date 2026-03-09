@@ -3,7 +3,6 @@
     <div class="container">
       <header class="page-header" style="margin-bottom: 2rem">
         <h1 class="section-title">Administration</h1>
-        <p class="section-subtitle">Gestion des bureaux, candidats et délégués</p>
       </header>
 
       <div class="alert alert--succes" v-if="messageSucces">{{ messageSucces }}</div>
@@ -11,144 +10,64 @@
 
       <!-- Onglets -->
       <div class="admin-tabs">
-        <button
-          v-for="tab in tabs"
-          :key="tab.id"
-          class="admin-tab"
-          :class="{ 'admin-tab--active': activeTab === tab.id }"
-          @click="activeTab = tab.id"
-        >
-          {{ tab.label }}
+        <button class="admin-tab" :class="{ 'admin-tab--active': activeTab === 'elections' }" @click="activateTab('elections')">
+          Elections
+        </button>
+        <button class="admin-tab" :class="{ 'admin-tab--active': activeTab === 'utilisateurs' }" @click="activateTab('utilisateurs')">
+          Utilisateurs
         </button>
       </div>
 
-      <!-- ===== BUREAUX ===== -->
-      <section v-show="activeTab === 'bureaux'" class="admin-panel">
+      <!-- ===== ELECTIONS ===== -->
+      <section v-if="activeTab === 'elections'" class="admin-panel">
         <div class="panel-header">
-          <h2 class="section-title" style="font-size: 1.4rem">Bureaux de vote</h2>
-          <button class="btn btn--primaire btn--sm" @click="ouvrirModalBureau()">+ Ajouter</button>
+          <h2 class="section-title" style="font-size: 1.4rem">Elections</h2>
+          <button v-if="auth.isAdmin" class="btn btn--primaire btn--sm" @click="ouvrirModalElection()">+ Ajouter</button>
         </div>
 
         <div class="card" style="padding: 0; overflow: hidden">
           <table class="tableau">
             <thead>
-              <tr>
-                <th>N°</th>
-                <th>Nom</th>
-                <th>Adresse</th>
-                <th>Inscrits</th>
-                <th>Délégués</th>
-                <th>Actions</th>
-              </tr>
+            <tr>
+              <th>Nom</th>
+            </tr>
             </thead>
             <tbody>
-              <tr v-for="bureau in store.bureaux" :key="bureau.id">
-                <td><strong>{{ bureau.numero }}</strong></td>
-                <td>{{ bureau.nom }}</td>
-                <td style="font-size: 0.85rem; color: var(--texte-doux)">{{ bureau.adresse }}</td>
-                <td>{{ bureau.inscrits }}</td>
-                <td>
-                  <button class="btn btn--fantome btn--sm" @click="ouvrirAssignation(bureau)">
-                    Gérer délégués
-                  </button>
-                </td>
-                <td style="display: flex; gap: 0.5rem">
-                  <button class="btn btn--fantome btn--sm" @click="ouvrirModalBureau(bureau)">Modifier</button>
-                  <button class="btn btn--danger btn--sm" @click="supprimerBureau(bureau.id)">
-                    Supprimer
-                  </button>
-                </td>
-              </tr>
-              <tr v-if="store.bureaux.length === 0">
-                <td colspan="6" style="text-align: center; color: var(--texte-doux)">
-                  Aucun bureau configuré
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <!-- ===== CANDIDATS ===== -->
-      <section v-show="activeTab === 'candidats'" class="admin-panel">
-        <div class="panel-header">
-          <h2 class="section-title" style="font-size: 1.4rem">Candidats / Listes</h2>
-          <button class="btn btn--primaire btn--sm" @click="ouvrirModalCandidat()">+ Ajouter</button>
-        </div>
-
-        <div class="card" style="padding: 0; overflow: hidden">
-          <table class="tableau">
-            <thead>
-              <tr>
-                <th>Ordre</th>
-                <th>Couleur</th>
-                <th>Nom</th>
-                <th>Liste</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="c in store.candidats" :key="c.id">
-                <td>{{ c.ordre }}</td>
-                <td>
-                  <div :style="{ width: '24px', height: '24px', borderRadius: '50%', background: c.couleur }"></div>
-                </td>
-                <td><strong>{{ c.prenom }} {{ c.nom }}</strong></td>
-                <td>{{ c.liste }}</td>
-                <td style="display: flex; gap: 0.5rem">
-                  <button class="btn btn--fantome btn--sm" @click="ouvrirModalCandidat(c)">Modifier</button>
-                  <button class="btn btn--danger btn--sm" @click="supprimerCandidat(c.id)">Supprimer</button>
-                </td>
-              </tr>
-              <tr v-if="store.candidats.length === 0">
-                <td colspan="5" style="text-align: center; color: var(--texte-doux)">
-                  Aucun candidat configuré
-                </td>
-              </tr>
+            <tr v-for="c in store.elections" :key="c.id" @click="ouvrirModalElection(c)">
+              <td>{{ c.nom }}</td>
+            </tr>
+            <tr v-if="store.elections.length === 0">
+              <td colspan="5" style="text-align: center; color: var(--texte-doux)">
+                Aucune élection configurée
+              </td>
+            </tr>
             </tbody>
           </table>
         </div>
       </section>
 
       <!-- ===== UTILISATEURS ===== -->
-      <section v-show="activeTab === 'utilisateurs'" class="admin-panel">
+      <section v-if="activeTab === 'utilisateurs'" class="admin-panel">
         <div class="panel-header">
-          <h2 class="section-title" style="font-size: 1.4rem">Délégués</h2>
+          <h2 class="section-title" style="font-size: 1.4rem">Utilisateurs</h2>
           <button class="btn btn--primaire btn--sm" @click="ouvrirModalUser()">+ Ajouter</button>
         </div>
 
-        <div class="card" style="padding: 0; overflow: hidden">
+        <div class="card" style="padding: 0; overflow: auto">
           <table class="tableau">
             <thead>
               <tr>
                 <th>Nom</th>
                 <th>Email</th>
                 <th>Rôle</th>
-                <th>Bureau(x) assigné(s)</th>
-                <th>Disponibilité</th>
-                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="user in users" :key="user.id">
-                <td><strong>{{ user.nom }}</strong></td>
+              <tr v-for="user in users" :key="user.id" @click="ouvrirModalUser(user)">
+                <td><strong>{{ user.nom }} {{ user.prenom }}</strong></td>
                 <td>{{ user.email }}</td>
                 <td>
-                  <span class="badge" :class="user.isAdmin ? 'badge--rouge' : 'badge--bleu'">
-                    {{ user.role === 'scrutateur' ? 'Aucun' : user.role }}
-                  </span>
-                </td>
-                <td>{{ user.bureaux.length }} bureau(x)</td>
-                <td>{{ nomBureau(user.dispBureauId) }} {{ user.dispAssesseur ? 'Assesseur' : ''}}{{ user.dispAssesseur && user.dispDelegue ? ' / ' : ' '}}{{ user.dispDelegue ? 'Délégué' : ''}}</td>
-                <td style="display: flex; gap: 0.5rem">
-                  <button class="btn btn--fantome btn--sm" @click="ouvrirModalUser(user)">Modifier</button>
-                  <button
-                    class="btn btn--danger btn--sm"
-                    @click="supprimerUser(user.id)"
-                    :disabled="user.email === 'admin@elections.local'"
-                  >
-                    Supprimer
-                  </button>
+                  <span v-if="user.isAdmin" class="badge badge--rouge">Admin</span>
                 </td>
               </tr>
               <tr v-if="users.length === 0">
@@ -159,87 +78,27 @@
         </div>
       </section>
 
-      <!-- ===== DANGER ZONE ===== -->
-      <section v-show="activeTab === 'danger'" class="admin-panel">
-        <h2 class="section-title" style="font-size: 1.4rem; color: var(--rouge-rep)">⚠ Zone dangereuse</h2>
-        <p class="section-subtitle">Ces actions sont irréversibles.</p>
-        <div class="card" style="border: 2px solid var(--rouge-rep)">
-          <h3 style="margin-bottom: 0.5rem">Réinitialiser le dépouillement</h3>
-          <p style="font-size: 0.9rem; color: var(--texte-doux); margin-bottom: 1rem">
-            Supprime tous les résultats, participations et remet les bureaux à zéro. Les bureaux, candidats et utilisateurs sont conservés.
-          </p>
-          <button class="btn btn--danger" @click="resetElection">
-            ⚠ Réinitialiser toutes les données de vote
-          </button>
-        </div>
-      </section>
+      <div class="alert alert--succes" v-if="messageSucces">{{ messageSucces }}</div>
+      <div class="alert alert--erreur" v-if="messageErreur">{{ messageErreur }}</div>
 
     </div>
 
-    <!-- ===== MODAL BUREAU ===== -->
-    <div class="modal-overlay" v-if="showModalBureau" @click.self="showModalBureau = false">
+    <!-- ===== MODAL ELECTION ===== -->
+    <div class="modal-overlay" v-if="showModalElection" @click.self="showModalElection = false">
       <div class="modal-box">
-        <h2 class="modal-titre">{{ formBureau.id ? 'Modifier le bureau' : 'Nouveau bureau' }}</h2>
-        <div class="form-group">
-          <label class="form-label">Numéro</label>
-          <input v-model.number="formBureau.numero" type="number" min="1" class="form-control" />
-        </div>
+        <h2 class="modal-titre">{{ formElection.id ? "Modifier l'élection'" : 'Nouvelle élection' }}</h2>
         <div class="form-group">
           <label class="form-label">Nom</label>
-          <input v-model="formBureau.nom" type="text" class="form-control" placeholder="École primaire Jean Jaurès" />
+          <input v-model="formElection.nom" type="text" class="form-control" placeholder="Municipales Sète 2026" />
         </div>
-        <div class="form-group">
-          <label class="form-label">Adresse</label>
-          <input v-model="formBureau.adresse" type="text" class="form-control" placeholder="12 rue de la Mairie" />
-        </div>
-        <div class="form-group">
-          <label class="form-label">Nombre d'inscrits</label>
-          <input v-model.number="formBureau.inscrits" type="number" min="0" class="form-control" />
-        </div>
-        <div style="display: flex; gap: 0.75rem; justify-content: flex-end">
-          <button class="btn btn--fantome" @click="showModalBureau = false">Annuler</button>
-          <button class="btn btn--primaire" @click="sauvegarderBureau">
-            {{ formBureau.id ? 'Modifier' : 'Créer' }}
-          </button>
-        </div>
-      </div>
-    </div>
 
-    <!-- ===== MODAL CANDIDAT ===== -->
-    <div class="modal-overlay" v-if="showModalCandidat" @click.self="showModalCandidat = false">
-      <div class="modal-box">
-        <h2 class="modal-titre">{{ formCandidat.id ? 'Modifier le candidat' : 'Nouveau candidat' }}</h2>
-        <div class="grille-2">
-          <div class="form-group">
-            <label class="form-label">Prénom</label>
-            <input v-model="formCandidat.prenom" type="text" class="form-control" />
-          </div>
-          <div class="form-group">
-            <label class="form-label">Nom</label>
-            <input v-model="formCandidat.nom" type="text" class="form-control" />
-          </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Liste / Parti</label>
-          <input v-model="formCandidat.liste" type="text" class="form-control" placeholder="Liste du Rassemblement Citoyen" />
-        </div>
-        <div class="grille-2">
-          <div class="form-group">
-            <label class="form-label">Couleur</label>
-            <div style="display: flex; gap: 0.5rem; align-items: center">
-              <input v-model="formCandidat.couleur" type="color" style="width: 40px; height: 36px; border: 1px solid var(--gris-clair); border-radius: var(--rayon); padding: 2px; cursor: pointer" />
-              <input v-model="formCandidat.couleur" type="text" class="form-control" placeholder="#003189" />
-            </div>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Ordre d'affichage</label>
-            <input v-model.number="formCandidat.ordre" type="number" min="1" class="form-control" />
-          </div>
-        </div>
         <div style="display: flex; gap: 0.75rem; justify-content: flex-end">
-          <button class="btn btn--fantome" @click="showModalCandidat = false">Annuler</button>
-          <button class="btn btn--primaire" @click="sauvegarderCandidat">
-            {{ formCandidat.id ? 'Modifier' : 'Créer' }}
+          <button class="btn btn--fantome" @click="showModalElection = false">Annuler</button>
+          <button class="btn btn--primaire" @click="sauvegarderElection">
+            {{ formElection.id ? 'Modifier' : 'Créer' }}
+          </button>
+          <button v-if="formElection.id" class="btn btn--danger btn--sm" @click.stop="supprimerElection(formElection.id)">
+            Supprimer
           </button>
         </div>
       </div>
@@ -250,96 +109,33 @@
       <div class="modal-box">
         <h2 class="modal-titre">{{ formUser.id ? 'Modifier l\'utilisateur' : 'Nouvel utilisateur' }}</h2>
         <div class="form-group">
-          <label class="form-label">Nom complet</label>
+          <label class="form-label">Nom</label>
           <input v-model="formUser.nom" type="text" class="form-control" />
         </div>
         <div class="form-group">
+          <label class="form-label">Prénom</label>
+          <input v-model="formUser.prenom" type="text" class="form-control" />
+        </div>
+        <div class="form-group">
           <label class="form-label">Email</label>
-          <input v-model="formUser.email" type="email" class="form-control" />
+          <input v-model="formUser.email" type="email" class="form-control" disabled/>
         </div>
         <div class="form-group">
-          <label class="form-label">
-            Mot de passe
-            <span v-if="formUser.id" style="font-weight: 400; color: var(--texte-doux); font-size: 0.85rem"> — laisser vide pour ne pas modifier</span>
-          </label>
-          <input v-model="formUser.password" type="password" class="form-control" />
-        </div>
-        <div class="form-group">
-          <label class="form-label">Rôle</label>
-          <select v-model="formUser.role" class="form-control">
-            <option value="aucun">Aucun</option>
-            <option value="assesseur">Assesseur</option>
-            <option value="delegue">Délégué</option>
-          </select>
-        </div>
-        <div v-if="formUser.role === 'assesseur'" class="form-group">
-          <label class="form-label">Bureau assigné</label>
-          <div class="bureaux-checkboxes">
-            <label v-for="b in store.bureaux" :key="b.id" class="checkbox-label">
-              <input type="checkbox" :value="b.id" v-model="formUser.bureauIds" />
-              Bureau {{ b.numero }} — {{ b.nom }}
-            </label>
-          </div>
-        </div>
-        <div v-if="formUser.role === 'delegue'" class="form-group">
-          <label class="form-label">Bureaux assignés</label>
-          <div class="bureaux-checkboxes">
-            <label v-for="b in store.bureaux" :key="b.id" class="checkbox-label">
-              <input type="checkbox" :value="b.id" v-model="formUser.bureauIds" />
-              Bureau {{ b.numero }} — {{ b.nom }}
-            </label>
-          </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Bureau privilégié</label>
-          <select v-model="formUser.dispBureauId" class="form-control">
-            <option :value="null">— Aucun —</option>
-            <option v-for="b in store.bureaux" :key="b.id" :value="b.id">
-              Bureau {{ b.numero }} — {{ b.nom }}
-            </option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Fonctions</label>
-          <div style="display: flex; flex-direction: column; gap: 0.5rem">
-            <label class="checkbox-label">
-              <input type="checkbox" v-model="formUser.dispAssesseur" />
-              Assesseur
-            </label>
-            <label class="checkbox-label">
-              <input type="checkbox" v-model="formUser.dispDelegue" />
-              Délégué
-            </label>
-          </div>
+          <label class="form-label">Administrateur</label>
+          <input v-model="formUser.isAdmin" type="checkbox" class="form-control"/>
         </div>
         <div style="display: flex; gap: 0.75rem; justify-content: flex-end">
           <button class="btn btn--fantome" @click="showModalUser = false">Annuler</button>
           <button class="btn btn--primaire" @click="sauvegarderUser">
             {{ formUser.id ? 'Modifier' : 'Créer' }}
           </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- ===== MODAL ASSIGNATION ===== -->
-    <div class="modal-overlay" v-if="showModalAssignation" @click.self="showModalAssignation = false">
-      <div class="modal-box">
-        <h2 class="modal-titre">Délégués — Bureau {{ bureauAssignation?.numero }}</h2>
-        <p style="font-size: 0.9rem; color: var(--texte-doux); margin-bottom: 1rem">
-          {{ bureauAssignation?.nom }}
-        </p>
-        <div class="bureaux-checkboxes">
-          <label v-for="user in scrutateurs" :key="user.id" class="checkbox-label">
-            <input
-              type="checkbox"
-              :checked="estAssigne(user.id)"
-              @change="toggleAssignation(user.id, $event.target.checked)"
-            />
-            {{ user.nom }} ({{ user.email }})
-          </label>
-        </div>
-        <div style="display: flex; justify-content: flex-end; margin-top: 1rem">
-          <button class="btn btn--primaire" @click="showModalAssignation = false">Fermer</button>
+          <button v-if="formUser.id"
+              class="btn btn--danger btn--sm"
+              @click="supprimerUser(formUser.id)"
+              :disabled="formUser.email === 'christ.arnal@laposte.net'"
+          >
+            Supprimer
+          </button>
         </div>
       </div>
     </div>
@@ -350,32 +146,34 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useElectionStore } from '@/stores/election'
-import { adminAPI } from '@/api'
+import { useAuthStore } from '@/stores/auth'
+import { adminAPI, authAPI, ownerAPI } from '@/api'
 
 const store = useElectionStore()
+const auth = useAuthStore()
 const messageSucces = ref('')
 const messageErreur = ref('')
 
-const activeTab = ref('bureaux')
-const tabs = [
-  { id: 'bureaux', label: 'Bureaux' },
-  { id: 'candidats', label: 'Candidats' },
-  { id: 'utilisateurs', label: 'Utilisateurs' },
-  { id: 'danger', label: '⚠ Reset' },
-]
-
+const activeTab = ref('elections')
 const users = ref([])
-const showModalBureau = ref(false)
-const showModalCandidat = ref(false)
+const showModalElection = ref(false)
 const showModalUser = ref(false)
-const showModalAssignation = ref(false)
-const bureauAssignation = ref(null)
+const electionAssignation = ref(undefined)
 
-const formBureau = reactive({ id: null, numero: 1, nom: '', adresse: '', inscrits: 0 })
-const formCandidat = reactive({ id: null, nom: '', prenom: '', liste: '', couleur: '#003189', ordre: 1 })
-const formUser = reactive({ id: null, nom: '', email: '', password: '', role: 'aucun', bureauIds: [], dispBureauId: null, dispAssesseur: false, dispDelegue: false })
+const formElection = reactive({ id: null, nom: '' })
+const formUser = reactive({ id: null, nom: '', prenom: '', email: '', isAdmin: false})
 
-const scrutateurs = computed(() => users.value.filter(u => u.role === 'assesseur' || u.role === 'delegue' ))
+async function activateTab(id) {
+  switch(id) {
+    case "elections":
+      await store.chargerElections()
+      break;
+    case "utilisateurs":
+      users.value = await store.chargerUsers(true)
+      break;
+  }
+  activeTab.value = id
+}
 
 function showMsg(msg, type = 'succes') {
   if (type === 'succes') { messageSucces.value = msg; messageErreur.value = '' }
@@ -383,141 +181,73 @@ function showMsg(msg, type = 'succes') {
   setTimeout(() => { messageSucces.value = ''; messageErreur.value = '' }, 3500)
 }
 
-// ===== BUREAUX =====
-function ouvrirModalBureau(bureau = null) {
-  if (bureau) {
-    Object.assign(formBureau, { id: bureau.id, numero: bureau.numero, nom: bureau.nom, adresse: bureau.adresse, inscrits: bureau.inscrits })
+// ===== ELECTIONS =====
+function ouvrirModalElection(election = null) {
+  if (election) {
+    electionAssignation.value = election
+    Object.assign(formElection, { id: election.id, nom: election.nom })
   } else {
-    Object.assign(formBureau, { id: null, numero: store.bureaux.length + 1, nom: '', adresse: '', inscrits: 0 })
+    electionAssignation.value = undefined
+    Object.assign(formElection, { id: null, nom: '' })
   }
-  showModalBureau.value = true
+  showModalElection.value = true
 }
-
-async function sauvegarderBureau() {
+async function sauvegarderElection() {
+  console.log("sauvegarderElection : ",formElection)
   try {
-    if (formBureau.id) {
-      await store.modifierBureau(formBureau.id, { numero: formBureau.numero, nom: formBureau.nom, adresse: formBureau.adresse, inscrits: formBureau.inscrits })
-      showMsg('Bureau modifié ✓')
+    if (formElection.id) {
+      console.log("modification")
+      await store.modifierElection(formElection.id, { nom: formElection.nom })
+      showMsg('Election modifiée ✓')
     } else {
-      await store.creerBureau({ numero: formBureau.numero, nom: formBureau.nom, adresse: formBureau.adresse, inscrits: formBureau.inscrits })
-      showMsg('Bureau créé ✓')
+      console.log("création")
+      await store.creerElection({ nom: formElection.nom })
+      showMsg('Election créée ✓')
     }
-    showModalBureau.value = false
+    showModalElection.value = false
   } catch (e) {
+    console.error("Erreur sauvegarderElection :", e)
     showMsg(e.response?.data?.reason || 'Erreur', 'erreur')
   }
 }
-
-async function supprimerBureau(id) {
-  if (!confirm('Supprimer ce bureau ? Toutes ses données seront perdues.')) return
+async function supprimerElection(id) {
+  if (!confirm('Supprimer cette élection ? Toutes ses données seront perdues.')) return
   try {
-    await store.supprimerBureau(id)
-    showMsg('Bureau supprimé ✓')
+    await store.supprimerElection(id)
+    showMsg('Election supprimée ✓')
+    showModalElection.value = false
   } catch (e) {
     showMsg('Erreur lors de la suppression', 'erreur')
   }
 }
 
-// ===== ASSIGNATION =====
-function ouvrirAssignation(bureau) {
-  bureauAssignation.value = bureau
-  showModalAssignation.value = true
-}
-
-function estAssigne(userId) {
-  return bureauAssignation.value?.scrutateurs?.includes(userId) ?? false
-}
-
-async function toggleAssignation(userId, checked) {
-  if (!bureauAssignation.value) return
-  try {
-    if (checked) {
-      await adminAPI.assignScrutateur(bureauAssignation.value.id, userId)
-    } else {
-      await adminAPI.removeScrutateur(bureauAssignation.value.id, userId)
-    }
-    await store.chargerBureaux()
-    bureauAssignation.value = store.bureaux.find(b => b.id === bureauAssignation.value.id)
-    showMsg('Assignation mise à jour ✓')
-  } catch (e) {
-    showMsg('Erreur', 'erreur')
-  }
-}
-
-// ===== CANDIDATS =====
-function ouvrirModalCandidat(candidat = null) {
-  if (candidat) {
-    Object.assign(formCandidat, { ...candidat })
-  } else {
-    Object.assign(formCandidat, { id: null, nom: '', prenom: '', liste: '', couleur: '#003189', ordre: store.candidats.length + 1 })
-  }
-  showModalCandidat.value = true
-}
-
-async function sauvegarderCandidat() {
-  try {
-    if (formCandidat.id) {
-      await store.modifierCandidat(formCandidat.id, { ...formCandidat })
-      showMsg('Candidat modifié ✓')
-    } else {
-      await store.creerCandidat({ ...formCandidat })
-      showMsg('Candidat créé ✓')
-    }
-    showModalCandidat.value = false
-  } catch (e) {
-    showMsg(e.response?.data?.reason || 'Erreur', 'erreur')
-  }
-}
-
-async function supprimerCandidat(id) {
-  if (!confirm('Supprimer ce candidat ?')) return
-  try {
-    await store.supprimerCandidat(id)
-    showMsg('Candidat supprimé ✓')
-  } catch (e) {
-    showMsg('Erreur', 'erreur')
-  }
-}
-
 // ===== UTILISATEURS =====
-async function chargerUsers() {
-  try {
-    const res = await adminAPI.getUsers()
-    users.value = res.data
-  } catch {}
-}
-
 function ouvrirModalUser(user = null) {
   if (user) {
     Object.assign(formUser, {
       id: user.id,
       nom: user.nom,
+      prenom: user.prenom,
       email: user.email,
-      password: '',
-      role: user.role,
-      bureauIds: [...(user.bureaux || [])],
-      dispBureauId: user.dispBureauId ?? null,
-      dispAssesseur: user.dispAssesseur ?? false,
-      dispDelegue: user.dispDelegue ?? false,
+      isAdmin: user.isAdmin,
     })
   } else {
-    Object.assign(formUser, { id: null, nom: '', email: '', password: '', role: 'aucun', bureauIds: [], dispBureauId: null, dispAssesseur: false, dispDelegue: false })
+    Object.assign(formUser, {
+      id: null,
+      nom: '', prenom: '', email: '',
+      isAdmin: false
+    })
   }
   showModalUser.value = true
 }
-
 async function sauvegarderUser() {
   try {
     const payload = {
       nom: formUser.nom,
+      prenom: formUser.prenom,
       email: formUser.email,
-      role: formUser.role,
-      bureauIds: formUser.bureauIds,
-      dispBureauId: formUser.dispBureauId || null,
-      dispAssesseur: formUser.dispAssesseur,
-      dispDelegue: formUser.dispDelegue,
+      isAdmin: formUser.isAdmin,
     }
-    if (formUser.password) payload.password = formUser.password
 
     if (formUser.id) {
       await adminAPI.updateUser(formUser.id, payload)
@@ -526,49 +256,25 @@ async function sauvegarderUser() {
       await adminAPI.createUser(payload)
       showMsg('Utilisateur créé ✓')
     }
-    await chargerUsers()
+    users.value = await store.chargerUsers(true)
     showModalUser.value = false
   } catch (e) {
     showMsg(e.response?.data?.reason || 'Erreur', 'erreur')
   }
 }
-
-function nomBureau(id) {
-  const bureau = store.bureaux.find(b => b.id === id)
-  if (!bureau) return ''
-  return `${bureau.numero} - ${bureau.nom}`
-}
-
-async function creerUser() {
-  await sauvegarderUser()
-}
-
 async function supprimerUser(id) {
   if (!confirm('Supprimer cet utilisateur ?')) return
   try {
     await adminAPI.deleteUser(id)
-    await chargerUsers()
+    users.value = await store.chargerUsers(true)
     showMsg('Utilisateur supprimé ✓')
   } catch (e) {
     showMsg('Erreur', 'erreur')
   }
 }
 
-// ===== RESET =====
-async function resetElection() {
-  if (!confirm('⚠ ATTENTION : Êtes-vous sûr de vouloir effacer TOUTES les données de vote ? Cette action est irréversible.')) return
-  if (!confirm('Dernière confirmation : effacer tous les résultats et participations ?')) return
-  try {
-    await adminAPI.resetElection()
-    await store.chargerBureaux()
-    showMsg('Données réinitialisées ✓')
-  } catch (e) {
-    showMsg('Erreur lors de la réinitialisation', 'erreur')
-  }
-}
-
 onMounted(async () => {
-  await Promise.all([store.chargerBureaux(), store.chargerCandidats(), chargerUsers()])
+  await activateTab('elections')
 })
 </script>
 
@@ -643,6 +349,16 @@ onMounted(async () => {
 }
 
 .bureaux-checkboxes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid var(--gris-clair);
+  border-radius: var(--rayon);
+  padding: 0.75rem;
+}
+.user-subgroup {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;

@@ -1,9 +1,8 @@
 <template>
   <main class="page">
     <div class="container">
-
       <!-- Hero header -->
-      <header class="accueil-hero">
+      <header v-if="store.electionCourante" class="accueil-hero">
         <div>
           <h1 class="section-title">Résultats en direct</h1>
           <p class="section-subtitle">
@@ -22,12 +21,16 @@
           </span>
         </div>
       </header>
+      <header v-else class="accueil-hero">
+        <div>
+          <h1 class="section-title">Commencez par sélectionner une élection.</h1>
+        </div>
+      </header>
 
       <!-- Chargement -->
       <div v-if="loading" class="spinner"></div>
 
-      <template v-else-if="store.synthese">
-
+      <template v-else-if="store.electionCourante && store.synthese">
         <!-- Stats globales -->
         <div class="grille-4 stats-globales">
           <div class="card stat-box">
@@ -57,10 +60,10 @@
 
           <div class="resultats-liste">
             <div
-              v-for="(r, i) in store.resultatsGlobaux"
-              :key="r.candidatId"
-              class="candidat-row"
-              :class="{ 'candidat-row--premier': i === 0 }"
+                v-for="(r, i) in store.resultatsGlobaux"
+                :key="r.candidatId"
+                class="candidat-row"
+                :class="{ 'candidat-row--premier': i === 0 }"
             >
               <div class="candidat-rang">{{ i + 1 }}</div>
               <div class="candidat-couleur" :style="{ background: r.couleur }"></div>
@@ -75,8 +78,8 @@
               <div class="candidat-barre-wrap">
                 <div class="progress-bar-wrap">
                   <div
-                    class="progress-bar-fill"
-                    :style="{ width: `${r.pourcentage}%`, background: r.couleur }"
+                      class="progress-bar-fill"
+                      :style="{ width: `${r.pourcentage}%`, background: r.couleur }"
                   ></div>
                 </div>
               </div>
@@ -92,33 +95,33 @@
           <div class="card">
             <table class="tableau">
               <thead>
-                <tr>
-                  <th>Heure</th>
-                  <th>Votants</th>
-                  <th>Taux</th>
-                  <th style="width: 40%">Progression</th>
-                </tr>
+              <tr>
+                <th>Heure</th>
+                <th>Votants</th>
+                <th>Taux</th>
+                <th style="width: 40%">Progression</th>
+              </tr>
               </thead>
               <tbody>
-                <tr v-for="p in participationsParHeure" :key="p.heure">
-                  <td>
-                    <strong>{{ p.heure === 'final' ? 'Résultat final' : p.heure }}</strong>
-                  </td>
-                  <td>{{ p.totalVotants.toLocaleString('fr-FR') }}</td>
-                  <td>
+              <tr v-for="p in participationsParHeure" :key="p.heure">
+                <td>
+                  <strong>{{ p.heure === 'final' ? 'Résultat final' : p.heure }}</strong>
+                </td>
+                <td>{{ p.totalVotants.toLocaleString('fr-FR') }}</td>
+                <td>
                     <span :style="{ color: couleurTaux(p.tauxParticipation), fontWeight: 600 }">
                       {{ p.tauxParticipation.toFixed(1) }}%
                     </span>
-                  </td>
-                  <td>
-                    <div class="progress-bar-wrap">
-                      <div
+                </td>
+                <td>
+                  <div class="progress-bar-wrap">
+                    <div
                         class="progress-bar-fill"
                         :style="{ width: `${p.tauxParticipation}%`, background: 'var(--bleu-rep)' }"
-                      ></div>
-                    </div>
-                  </td>
-                </tr>
+                    ></div>
+                  </div>
+                </td>
+              </tr>
               </tbody>
             </table>
           </div>
@@ -131,16 +134,16 @@
 
           <div class="grille-3">
             <router-link
-              v-for="bureau in store.synthese.bureaux"
-              :key="bureau.id"
-              :to="`/bureau/${bureau.id}`"
-              class="card bureau-card"
+                v-for="bureau in store.synthese.bureaux"
+                :key="bureau.id"
+                :to="`/bureau/${bureau.id}`"
+                class="card bureau-card"
             >
               <div class="bureau-header">
                 <span class="bureau-numero">Bureau {{ bureau.numero }}</span>
                 <span
-                  class="badge"
-                  :class="bureau.depouillementTermine ? 'badge--vert' : 'badge--gris'"
+                    class="badge"
+                    :class="bureau.depouillementTermine ? 'badge--vert' : 'badge--gris'"
                 >
                   {{ bureau.depouillementTermine ? '✓ Terminé' : 'En cours' }}
                 </span>
@@ -156,24 +159,26 @@
 
       </template>
 
-      <div v-else class="alert alert--info">
+      <div v-else-if="store.electionCourante" class="alert alert--info">
         Aucune donnée disponible. Le dépouillement n'a pas encore commencé.
       </div>
-
+      <div v-else />
     </div>
   </main>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import {ref, computed, onMounted, onUnmounted, watch} from 'vue'
 import { useElectionStore } from '@/stores/election'
+import {useAuthStore} from "@/stores/auth";
 
+const auth = useAuthStore()
 const store = useElectionStore()
 const loading = ref(true)
 let intervalId = null
 
 const participationsParHeure = computed(() =>
-  (store.synthese?.participationsParHeure || []).filter(p => p.totalVotants > 0)
+    (store.synthese?.participationsParHeure || []).filter(p => p.totalVotants > 0)
 )
 
 function couleurTaux(taux) {
@@ -186,17 +191,33 @@ function formatTime(date) {
   return new Date(date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
 }
 
-async function charger() {
-  await Promise.all([store.chargerSynthese(), store.chargerCandidats()])
-  loading.value = false
+async function resultatLive() {
+  if(store.electionCourante) {
+    await Promise.all([store.chargerSynthese(), store.chargerCandidats()])
+  }
 }
 
-onMounted(() => {
-  charger()
-  intervalId = setInterval(charger, 30000)
+onMounted(async () => {
+  loading.value = true
+  await resultatLive()
+  loading.value = false
+  intervalId = setInterval(resultatLive, 30000)
 })
 
 onUnmounted(() => clearInterval(intervalId))
+
+watch(() => auth.user, async () => {
+  loading.value = true
+  await store.chargerElections()
+  loading.value = false
+})
+
+watch(() => store.electionCourante, async () => {
+  loading.value = true
+  await resultatLive()
+  loading.value = false
+})
+
 </script>
 
 <style scoped>

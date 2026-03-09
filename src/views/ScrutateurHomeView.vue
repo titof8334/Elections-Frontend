@@ -1,85 +1,93 @@
 <template>
   <main class="page">
     <div class="container">
-      <header class="page-header">
-        <div>
-          <h1 class="section-title">Mes bureaux de vote</h1>
-          <p class="section-subtitle">Bienvenue, {{ auth.user?.nom }}</p>
-        </div>
-      </header>
 
       <div v-if="loading" class="spinner"></div>
 
       <template v-else>
-        <div v-if="mesBureaux.length === 0" class="alert alert--info">
-          Aucun bureau ne vous est assigné. Contactez l'administrateur.
-        </div>
-
-        <div v-else class="grille-2">
-          <div
-            v-for="bureau in mesBureaux"
-            :key="bureau.id"
-            class="card bureau-scrutateur-card"
-          >
-            <div class="bureau-scrutateur-header">
-              <div>
-                <span class="bureau-numero-label">Bureau {{ bureau.numero }}</span>
-                <h3 class="bureau-nom">{{ bureau.nom }}</h3>
-                <p class="bureau-adresse">{{ bureau.adresse }}</p>
-              </div>
-              <span
-                class="badge"
-                :class="bureau.depouillementTermine ? 'badge--vert' : 'badge--gris'"
-              >
+        <template v-if="store.electionCourante">
+          <header class="page-header">
+            <div>
+              <h1 class="section-title">Mes bureaux de vote</h1>
+              <p class="section-subtitle">Bienvenue, {{ auth.user?.nom }}</p>
+            </div>
+          </header>
+          <div v-if="store.bureaux.length === 0" class="alert alert--info">
+            Aucun bureau ne vous est assigné. Contactez l'administrateur.
+          </div>
+          <div v-else class="grille-2">
+            <div
+                v-for="bureau in store.bureaux"
+                :key="bureau.id"
+                class="card bureau-scrutateur-card"
+            >
+              <div class="bureau-scrutateur-header">
+                <div>
+                  <span class="bureau-numero-label">Bureau {{ bureau.numero }}</span>
+                  <h3 class="bureau-nom">{{ bureau.nom }}</h3>
+                  <p class="bureau-adresse">{{ bureau.adresse }}</p>
+                </div>
+                <span
+                    class="badge"
+                    :class="bureau.depouillementTermine ? 'badge--vert' : 'badge--gris'"
+                >
                 {{ bureau.depouillementTermine ? '✓ Terminé' : 'En cours' }}
               </span>
-            </div>
+              </div>
 
-            <hr class="sep" />
+              <hr class="sep" />
 
-            <div class="bureau-info-grille">
-              <div class="info-item">
-                <span class="info-label">Inscrits</span>
-                <span class="info-val">{{ bureau.inscrits.toLocaleString('fr-FR') }}</span>
+              <div class="bureau-info-grille">
+                <div class="info-item">
+                  <span class="info-label">Inscrits</span>
+                  <span class="info-val">{{ bureau.inscrits.toLocaleString('fr-FR') }}</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Bulletins dépouillés</span>
+                  <span class="info-val">{{ bureau.bulletinsDepouilles }}</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Nuls</span>
+                  <span class="info-val">{{ bureau.bulletinsNuls }}</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Blancs</span>
+                  <span class="info-val">{{ bureau.bulletinsBlancs }}</span>
+                </div>
               </div>
-              <div class="info-item">
-                <span class="info-label">Bulletins dépouillés</span>
-                <span class="info-val">{{ bureau.bulletinsDepouilles }}</span>
-              </div>
-              <div class="info-item">
-                <span class="info-label">Nuls</span>
-                <span class="info-val">{{ bureau.bulletinsNuls }}</span>
-              </div>
-              <div class="info-item">
-                <span class="info-label">Blancs</span>
-                <span class="info-val">{{ bureau.bulletinsBlancs }}</span>
-              </div>
-            </div>
 
-            <div style="display: flex; gap: 0.75rem; margin-top: 1rem">
-              <router-link
-                :to="`/scrutateur/bureau/${bureau.id}`"
-                class="btn btn--primaire"
-                style="flex: 1; justify-content: center"
-              >
-                ✏ Saisir les données
-              </router-link>
-              <router-link
-                :to="`/bureau/${bureau.id}`"
-                class="btn btn--fantome btn--sm"
-              >
-                Voir
-              </router-link>
+              <div style="display: flex; gap: 0.75rem; margin-top: 1rem">
+                <router-link
+                    :to="`/scrutateur/bureau/${bureau.id}`"
+                    class="btn btn--primaire"
+                    style="flex: 1; justify-content: center"
+                >
+                  ✏ Saisir les données
+                </router-link>
+                <router-link
+                    :to="`/bureau/${bureau.id}`"
+                    class="btn btn--fantome btn--sm"
+                >
+                  Voir
+                </router-link>
+              </div>
             </div>
           </div>
-        </div>
+        </template>
+        <template v-else>
+          <header class="page-header">
+            <div>
+              <h1 class="section-title">Sélectionnez une élection.</h1>
+            </div>
+          </header>
+        </template>
       </template>
     </div>
   </main>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useElectionStore } from '@/stores/election'
 
@@ -87,13 +95,18 @@ const auth = useAuthStore()
 const store = useElectionStore()
 const loading = ref(true)
 
-const mesBureaux = computed(() => {
-  if (auth.isAdmin) return store.bureaux
-  return store.bureaux.filter(b => auth.bureauxAutorisés.includes(b.id))
+watch(() => store.electionCourante, async (newElection) => {
+  if (newElection) {
+    loading.value = true
+    await store.chargerBureaux()
+    loading.value = false
+  }
 })
 
 onMounted(async () => {
-  await store.chargerBureaux()
+  if (store.electionCourante) {
+    await store.chargerBureaux()
+  }
   loading.value = false
 })
 </script>

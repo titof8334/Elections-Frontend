@@ -33,47 +33,76 @@ export const authAPI = {
   me:       () => api.get('/auth/me'),
 }
 
+
 // ===== PUBLIC =====
 export const publicAPI = {
-  getSynthese: () => api.get('/synthese'),
-  getBureaux:  () => api.get('/bureaux'),
-  getBureau:   (id) => api.get(`/bureaux/${id}`),
-  getCandidats: () => api.get('/candidats'),
+  getSynthese: (electionId) => api.get(`/elections/${electionId}/synthese`),
+  getElections:  () => api.get('/elections'),
+  getElection:  (electionId) => api.get(`/elections/${electionId}`),
+  getBureaux:  (electionId) => api.get(`/elections/${electionId}/bureaux`),
+  getBureau:   (electionId,bureauId) => api.get(`/elections/${electionId}/bureaux/${bureauId}`),
+  getCandidats: (electionId) => api.get(`/elections/${electionId}/candidats`),
+}
+
+// ===== UTILISATEUR AUTHENFIFIE =====
+export const authUserAPI = {
+  me: () => api.get(`/me/elections/${electionId}`),
+  updateMe: (data) => api.put('/me',data),
+  updateMyPrefs: (userElectionId,data) => api.put(`/me/userElection/${userElectionId}`,data),
+  joinElection: (electionId) => api.post(`/me/elections/${electionId}`,""),
+  leaveElection: (electionId) => api.delete(`/me/elections/${electionId}`),
+  joinedElections: () => api.get(`/me/elections`),
+  profile: () => api.get(`/me/profile`),
 }
 
 // ===== DELEGUE =====
-export const scrutateurAPI = {
-  updateBureau: (id, data) => api.put(`/bureaux/${id}`, data),
-  upsertParticipation: (bureauId, heure, votants) =>
-    api.post(`/bureaux/${bureauId}/participations`, { heure, votants }),
-  upsertResultat: (bureauId, data) =>
-    api.post(`/bureaux/${bureauId}/resultats`, data),
-  getUser:    (id) => api.get(`/user/${id}`),
-  updateUser:    (id, data) => api.post(`/user/${id}`, data),
+export const delegueAPI = {
+  updateBureau:         (electionId, id, data) => api.put(`/delegue/elections/${electionId}/bureaux/${id}`, data),
+  upsertParticipation:  (electionId, bureauId, heure, votants) => api.post(`/delegue/elections/${electionId}/bureaux/${bureauId}/participations`, { heure, votants }),
+  upsertResultat:       (electionId, bureauId, data) => api.post(`/delegue/elections/${electionId}/bureaux/${bureauId}/resultats`, data)
+}
+
+// ===== OWNER =====
+export const ownerAPI = {
+  // Elections
+  deleteElection:      (electionId) => api.delete(`/owner/elections/${electionId}`),
+  updateElection:      (electionId,data) => api.put(`/owner/elections/${electionId}`,data),
+
+  // Bureaux
+  getBureaux:  (electionId) => api.get(`/owner/elections/${electionId}/bureaux`),
+  getBureau:   (electionId,bureauId) => api.get(`/owner/elections/${electionId}/bureaux/${bureauId}`),
+  createBureau:      (electionId, data) => api.post(`/owner/elections/${electionId}/bureaux`, data),
+  deleteBureau:      (electionId, id) => api.delete(`/owner/elections/${electionId}/bureaux/${id}`),
+  assignDelegue:  (electionId, bureauId, userId) => api.post(`/owner/elections/${electionId}/bureaux/${bureauId}/delegue/${userId}`),
+  removeDelegue:  (electionId, bureauId, userId) => api.delete(`/owner/elections/${electionId}/bureaux/${bureauId}/delegue/${userId}`),
+  assignAssesseur:  (electionId, bureauId, userId) => api.post(`/owner/elections/${electionId}/bureaux/${bureauId}/assesseurs/${userId}`),
+  removeAssesseur:  (electionId, bureauId, userId) => api.delete(`/owner/elections/${electionId}/bureaux/${bureauId}/assesseurs/${userId}`),
+
+  // Users
+  getUsers:    (electionId,) => api.get(`/owner/elections/${electionId}/users`),
+  createUser:  (electionId, data) => api.post(`/owner/elections/${electionId}/users`, data),
+  updateUser:  (electionId, id, data) => api.put(`/owner/elections/${electionId}/users/${id}`, data),
+  deleteUser:  (electionId, id) => api.delete(`/owner/elections/${electionId}/users/${id}`),
+
+  // Candidats
+  createCandidat: (electionId, data) => api.post(`/owner/elections/${electionId}/candidats`, data),
+  updateCandidat: (electionId, id, data) => api.put(`/owner/elections/${electionId}/candidats/${id}`, data),
+  deleteCandidat: (electionId, id) => api.delete(`/owner/elections/${electionId}/candidats/${id}`),
+
+  // Reset
+  resetElection: () => api.delete(`/owner/elections/${electionId}/reset`),
 }
 
 // ===== ADMIN =====
 export const adminAPI = {
-  // Bureaux
-  createBureau:      (data) => api.post('/bureaux', data),
-  updateBureau:      (id, data) => api.put(`/bureaux/${id}`, data),
-  deleteBureau:      (id) => api.delete(`/bureaux/${id}`),
-  assignScrutateur:  (bureauId, userId) => api.post(`/bureaux/${bureauId}/scrutateurs/${userId}`),
-  removeScrutateur:  (bureauId, userId) => api.delete(`/bureaux/${bureauId}/scrutateurs/${userId}`),
+  // Elections
+  createElection: (data) => api.post('/admin/elections', data),
+  createOwner:    (electionId,ownerId) => api.post(`/admin/elections/${id}/owner/${ownerId}`),
 
   // Users
-  getUsers:    () => api.get('/users'),
-  createUser:  (data) => api.post('/users', data),
-  updateUser:  (id,data) => api.put(`/users/${id}`, data),
-  deleteUser:  (id) => api.delete(`/users/${id}`),
-
-  // Candidats
-  createCandidat: (data) => api.post('/candidats', data),
-  updateCandidat: (id, data) => api.put(`/candidats/${id}`, data),
-  deleteCandidat: (id) => api.delete(`/candidats/${id}`),
-
-  // Reset
-  resetElection: () => api.delete('/reset'),
+  getUsers:       () => api.get('/admin/users'),
+  updateUser:     (id,data) => api.put(`/admin/users/${id}`, data),
+  deleteUser:     (id) => api.delete(`/admin/users/${id}`),
 }
 
 export default api

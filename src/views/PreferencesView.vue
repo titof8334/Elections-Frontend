@@ -16,7 +16,7 @@
       </div>
 
       <div v-else class="card" style="padding: 1.75rem">
-        <form @submit.prevent="sauvegarder">
+        <form>
 
           <!-- Identité -->
           <h3 class="section-pref">Identité</h3>
@@ -32,65 +32,61 @@
 
           <div class="form-group">
             <label class="form-label">Email</label>
-            <input v-model="form.email" type="email" class="form-control" placeholder="votre@email.fr" disabled />
+            <input v-model="form.email" type="email" class="form-control" placeholder="votre@email.fr" />
+          </div>
+          <div class="form-group">
+            <span v-if="form.isAdmin" class="badge badge--rouge">Admin</span>
+          </div>
+          <div style="display: flex; justify-content: flex-end; margin-top: 1.5rem">
+            <button type="button" class="btn btn--primaire" :disabled="auth.loading" @click="sauvegarder">
+              Mettre à jour mes informations
+            </button>
           </div>
 
-          <!--div class="form-group">
-            <label class="form-label">
-              Nouveau mot de passe
-              <span style="font-weight: 400; color: var(--texte-doux); font-size: 0.85rem"> — laisser vide pour ne pas modifier</span>
-            </label>
-            <input v-model="form.password" type="password" class="form-control" autocomplete="new-password" />
-          </div-->
-
           <hr class="pref-separator" />
-
+          <h3 class="section-pref">Préférences par élections</h3>
           <!-- Affichage -->
-          <h3 class="section-pref">Disponibilité</h3>
-
           <div class="form-group">
-            <label class="form-label">Bureau </label>
-            <select v-model="form.dispBureauId" class="form-control">
-              <option :value="null">— Aucun —</option>
-              <option v-for="b in electionStore.bureaux" :key="b.id" :value="b.id">
-                Bureau {{ b.numero }} — {{ b.nom }}
+            <label class="form-label">Election </label>
+            <select v-model="form.election" class="form-control">
+              <option :value="null">— Aucune —</option>
+              <option v-for="e in form.elections" :key="e.id" :value="e">
+                {{ e.nom }}
               </option>
             </select>
           </div>
-
           <div class="form-group">
-            <label class="form-label">Fonctions</label>
-            <div style="display: flex; flex-direction: column; gap: 0.6rem; margin-top: 0.25rem">
-              <label class="checkbox-label">
-                <input type="checkbox" v-model="form.dispAssesseur" />
-                Assesseur
-              </label>
-              <label class="checkbox-label">
-                <input type="checkbox" v-model="form.dispDelegue" />
-                Délégué
-              </label>
-            </div>
+            <label class="form-label">Disponibilité </label>
+            <select v-model="form.bureau" class="form-control">
+              <option :value="null">— Aucun —</option>
+              <option v-for="b in form.election.tousBureaux" :key="b.id" :value="b">
+                {{ b.numero }} — {{ b.nom }}
+              </option>
+            </select>
+            <label class="checkbox-label"><input type="checkbox" v-model="form.election.dispAssesseur" />Assesseur</label>
+            <label class="checkbox-label"><input type="checkbox" v-model="form.election.dispDelegue" />Délégué</label>
           </div>
+          <!-- Info lecture seule -->
+          <template v-if="form.election && (form.election.role != 'aucun' || form.election.isOwner)">
+            <div class="form-group">
+              <label class="form-label">Attribution </label>
+              <div class="card" style="padding: 1.0rem 1.0rem; margin-top: 0.5rem; background: var(--creme)">
+                <p style="font-size: 0.85rem; color: var(--texte-doux); margin: 0">
+                  <span v-if="form.election.isOwner" class="badge" :class="'badge--bleu'" style="margin-left: 0.5rem">Propriétaire</span>
+                  <span v-if="form.election.role != 'aucun'" class="badge" :class="'badge--bleu'" style="margin-left: 0.5rem">{{ form.election.role }}</span>
+                  {{ bureauxLabel }}
+                </p>
+              </div>
+            </div>
+          </template>
 
           <div style="display: flex; justify-content: flex-end; margin-top: 1.5rem">
-            <button type="submit" class="btn btn--primaire" :disabled="auth.loading">
-              {{ auth.loading ? 'Enregistrement…' : 'Enregistrer' }}
+            <button type="button" class="btn btn--primaire" @click="sauvegarderElection">
+              Mettre à jour mes choix pour cette élection
             </button>
           </div>
 
         </form>
-      </div>
-
-      <!-- Info lecture seule -->
-      <div v-if="!chargement" class="card" style="padding: 1.25rem 1.75rem; margin-top: 1.25rem; background: var(--creme)">
-        <p style="font-size: 0.85rem; color: var(--texte-doux); margin: 0">
-          <strong>Rôle :</strong>
-          <span class="badge" :class="auth.user?.isAdmin ? 'badge--rouge' : 'badge--bleu'" style="margin-left: 0.5rem">
-            {{ auth.user?.role }}
-          </span>
-          &nbsp;·&nbsp;
-          <strong>Bureaux assignés :</strong> {{ bureauxLabel }}
-        </p>
       </div>
     </div>
   </main>
@@ -100,10 +96,9 @@
 import { reactive, ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useElectionStore } from '@/stores/election'
-import {scrutateurAPI} from "@/api";
 
 const auth = useAuthStore()
-const electionStore = useElectionStore()
+const store = useElectionStore()
 
 const messageSucces = ref('')
 const messageErreur = ref('')
@@ -113,55 +108,77 @@ const form = reactive({
   nom: '',
   prenom: '',
   email: '',
-  dispBureauId: null,
-  dispAssesseur: false,
-  dispDelegue: false,
+  isAdmin: false,
+  bureauId: undefined,
+  elections: [],
+  election: undefined,
+  bureau: undefined
 })
 
 function remplirFormulaire() {
+  const election = store.electionCourante ? user.value.elections.find(e => e.electionId == store.electionCourante.id) : undefined
   if (!user.value) return
-  form.nom           = user.value?.nom           ?? ''
-  form.prenom           = user.value?.prenom           ?? ''
-  form.email         = user.value?.email         ?? ''
-  form.dispBureauId    = user.value?.dispBureauId    ?? null
-  form.dispAssesseur = user.value?.dispAssesseur ?? false
-  form.dispDelegue   = user.value?.dispDelegue   ?? false
+  let bureau = election.dispBureauId ? election.tousBureaux.find(b => b.id == election.dispBureauId) : (election.tousBureaux.length ? election.tousBureaux[0] : undefined)
+  form.nom           = user.value.nom          ?? ''
+  form.prenom           = user.value.prenom           ?? ''
+  form.email         = user.value.email         ?? ''
+  form.isAdmin         = user.value.isAdmin         ?? ''
+  form.bureauId         = user.value.isAdmin         ?? ''
+  form.elections = user.value.elections
+  form.election = election
+  form.bureau = bureau
 }
 
 const bureauxLabel = computed(() => {
-  const ids = auth.user?.bureaux || []
-  if (ids.length === 0) return 'Aucun'
-  return ids
-    .map(id => {
-      const b = electionStore.bureaux.find(b => b.id === id)
-      return b ? `Bureau ${b.numero}` : id
-    })
-    .join(', ')
+  if (form.election) {
+    const ids = form.election.bureaux.map(b => b.bureauId) ?? []
+    if (ids.length === 0) return ''
+    return ids
+        .map(id => {
+          const b = form.election.tousBureaux.find(b => b.id === id)
+          return b.numero + ' - ' + b.nom
+        })
+        .join(', ')
+  }
+  return ''
 })
 
 async function sauvegarder() {
   messageSucces.value = ''
   messageErreur.value = ''
-  console.log("form");
-  console.log(form);
 
   const payload = {
     nom:           form.nom,
     prenom:        form.prenom,
     email:         form.email,
-    dispBureauId:    form.dispBureauId || null,
-    dispAssesseur: form.dispAssesseur,
-    dispDelegue:   form.dispDelegue,
+  }
+  const ok = await auth.mettreAJourProfil(payload)
+  if (ok) {
+    messageSucces.value = 'Préférences enregistrées ✓'
+    setTimeout(() => { messageSucces.value = '' }, 3500)
+  } else {
+    messageErreur.value = auth.error || 'Erreur lors de la sauvegarde'
+    setTimeout(() => { messageErreur.value = '' }, 4000)
+  }
+}
+
+async function sauvegarderElection() {
+  console.log("SauvegarderElection")
+  messageSucces.value = ''
+  messageErreur.value = ''
+  const payload = {
+    dispBureauId:    form.bureau?.id ?? undefined,
+    dispAssesseur: form.election.dispAssesseur,
+    dispDelegue:   form.election.dispDelegue,
+    periode: form.election.periode
   }
   console.log("payload");
   console.log(payload);
 //  if (form.password) payload.password = form.password
 
-  const ok = await auth.mettreAJourProfil(payload)
-  console.log("ok")
-  console.log(ok)
+  const ok = await auth.mettreAJourProfilElection(form.election.id,payload)
+  console.log("SauvegarderElection OK")
   if (ok) {
-    form.password = ''
     messageSucces.value = 'Préférences enregistrées ✓'
     setTimeout(() => { messageSucces.value = '' }, 3500)
   } else {
@@ -173,10 +190,7 @@ async function sauvegarder() {
 onMounted(async () => {
   // Chargement parallèle : profil à jour depuis le backend + liste des bureaux
 
-  user.value = await useAuthStore().chargerMe()
-  await electionStore.chargerBureaux()
-  console.log("user.value");
-  console.log(user.value);
+  user.value = await store.chargerProfil()
   if (!user.value) {
     messageErreur.value = auth.error || 'Impossible de charger vos informations'
   }

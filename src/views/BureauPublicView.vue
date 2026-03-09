@@ -4,43 +4,43 @@
 
       <div v-if="loading" class="spinner"></div>
 
-      <template v-else-if="bureau">
+      <template v-else-if="bureauCourant">
         <div class="bureau-public-header">
           <router-link to="/" class="btn btn--fantome btn--sm">← Retour</router-link>
           <div>
-            <h1 class="section-title">Bureau {{ bureau.numero }} — {{ bureau.nom }}</h1>
-            <p class="section-subtitle">{{ bureau.adresse }}</p>
+            <h1 class="section-title">Bureau {{ store.bureauCourant.numero }} — {{ bureauCourant.nom }}</h1>
+            <p class="section-subtitle">{{ store.bureauCourant.adresse }}</p>
           </div>
           <span
             class="badge"
-            :class="bureau.depouillementTermine ? 'badge--vert' : 'badge--or'"
+            :class="store.bureauCourant.depouillementTermine ? 'badge--vert' : 'badge--or'"
           >
-            {{ bureau.depouillementTermine ? '✓ Dépouillement terminé' : 'En cours de dépouillement' }}
+            {{ store.bureauCourant.depouillementTermine ? '✓ Dépouillement terminé' : 'En cours de dépouillement' }}
           </span>
         </div>
 
         <!-- Stats bureau -->
         <div class="grille-4" style="margin-bottom: 2rem">
           <div class="card stat-box">
-            <div class="stat-box__valeur">{{ bureau.inscrits.toLocaleString('fr-FR') }}</div>
+            <div class="stat-box__valeur">{{ store.bureauCourant.inscrits.toLocaleString('fr-FR') }}</div>
             <div class="stat-box__label">Inscrits</div>
           </div>
           <div class="card stat-box">
-            <div class="stat-box__valeur">{{ bureau.bulletinsDepouilles.toLocaleString('fr-FR') }}</div>
+            <div class="stat-box__valeur">{{ store.bureauCourant.bulletinsDepouilles.toLocaleString('fr-FR') }}</div>
             <div class="stat-box__label">Bulletins dépouillés</div>
           </div>
           <div class="card stat-box">
-            <div class="stat-box__valeur">{{ bureau.bulletinsNuls }}</div>
+            <div class="stat-box__valeur">{{ store.bureauCourant.bulletinsNuls }}</div>
             <div class="stat-box__label">Bulletins nuls</div>
           </div>
           <div class="card stat-box">
-            <div class="stat-box__valeur">{{ bureau.bulletinsBlancs }}</div>
+            <div class="stat-box__valeur">{{ store.bureauCourant.bulletinsBlancs }}</div>
             <div class="stat-box__label">Bulletins blancs</div>
           </div>
         </div>
 
         <!-- Participation par heure -->
-        <section style="margin-bottom: 2rem" v-if="bureau.participations.length > 0">
+        <section style="margin-bottom: 2rem" v-if="store.bureauCourant.participations.length > 0">
           <h2 class="section-title" style="font-size: 1.4rem">Participation</h2>
           <p class="section-subtitle">Taux de participation aux différentes heures</p>
           <div class="card">
@@ -54,7 +54,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="p in bureau.participations" :key="p.id">
+                <tr v-for="p in store.bureauCourant.participations" :key="p.id">
                   <td><strong>{{ p.heure === 'final' ? 'Final' : p.heure }}</strong></td>
                   <td>{{ p.votants.toLocaleString('fr-FR') }}</td>
                   <td>
@@ -75,8 +75,8 @@
         <section v-if="resultatsAvecCandidats.length > 0">
           <h2 class="section-title" style="font-size: 1.4rem">Résultats</h2>
           <p class="section-subtitle">
-            {{ bureau.bulletinsDepouilles }} bulletins dépouillés
-            <span v-if="!bureau.depouillementTermine"> (résultats partiels)</span>
+            {{ store.bureauCourant.bulletinsDepouilles }} bulletins dépouillés
+            <span v-if="!store.bureauCourant.depouillementTermine"> (résultats partiels)</span>
             <span v-else> (résultats définitifs)</span>
           </p>
           <div class="resultats-bureau">
@@ -124,12 +124,11 @@ import { useElectionStore } from '@/stores/election'
 const route = useRoute()
 const store = useElectionStore()
 const loading = ref(true)
-const bureau = ref(null)
 
 const resultatsAvecCandidats = computed(() => {
-  if (!bureau.value || !store.candidats.length) return []
-  const totalVoix = bureau.value.resultats.reduce((s, r) => s + r.voix, 0)
-  return bureau.value.resultats.map(r => {
+  if (!store.bureauCourant || !store.candidats.length) return []
+  const totalVoix = store.bureauCourant.resultats.reduce((s, r) => s + r.voix, 0)
+  return store.bureauCourant.resultats.map(r => {
     const candidat = store.candidats.find(c => c.id === r.candidatId)
     const pct = totalVoix > 0 ? (r.voix / totalVoix) * 100 : 0
     return {
@@ -145,7 +144,7 @@ const resultatsAvecCandidats = computed(() => {
 
 onMounted(async () => {
   await store.chargerCandidats()
-  bureau.value = await store.chargerBureau(route.params.id)
+  await store.chargerBureau(route.params.id)
   loading.value = false
 })
 </script>

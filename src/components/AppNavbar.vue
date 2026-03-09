@@ -10,13 +10,41 @@
         <text x="20" y="24" text-anchor="middle" font-size="9" fill="#c9a84c" font-weight="bold">✓</text>
       </svg>
       <router-link to="/" class="navbar__title">
-        Élections municipales <span>2026</span>
+        <select v-model="selectedElectionId" @change="selectElection(selectedElectionId)" class="nav-select" :class="{ 'nav-select--placeholder': !selectedElectionId }">
+          <option value="" disabled>Choisir une élection</option>
+          <template v-if="auth.user">
+            <optgroup label="Mes élections">
+              <template v-for="el in store.elections" :key="el.id">
+                <option v-if="el.isSubscriber" :value="el.id">{{ el.nom }}</option>
+              </template>
+            </optgroup>
+            <optgroup label="Autre élections">
+              <template v-for="el in store.elections" :key="el.id">
+                <option v-if="!el.isSubscriber" :value="el.id">{{ el.nom }}</option>
+              </template>
+            </optgroup>
+          </template>
+          <template v-else>
+            <option v-for="el in store.elections" :key="el.id" :value="el.id">{{ el.nom }}</option>
+          </template>
+        </select>
+        &nbsp;
+        <template v-if="auth.user">
+          <button v-if="!store.elections.find(e => e.id == selectedElectionId).isSubscriber" class="nav-link" @click="subscribe(selectedElectionId)">
+            Soutenir
+          </button>
+          <button v-else class="nav-link nav-link--accent" @click="unsubscribe(selectedElectionId)">
+            Ne plus suivre
+          </button>
+        </template>
       </router-link>
     </div>
-
+  </nav>
+  <nav class="navbar">
+    <div class="navbar__brand"/>
     <div class="navbar__nav">
-      <router-link to="/" class="nav-link" :class="{ active: $route.name === 'accueil' }">
-        Résultats live
+      <router-link to="/" class="nav-link" :class="{ active: $route.name === '/accueil' }">
+        Live
       </router-link>
 
       <template v-if="!auth.isAuthenticated">
@@ -24,16 +52,18 @@
           Se connecter
         </router-link>
       </template>
-
       <template v-else>
-        <router-link to="/preferences" class="nav-link" :class="{ active: $route.name === 'preferences' }">
-          Préférences
-        </router-link>
-        <router-link to="/scrutateur" class="nav-link" :class="{ active: $route.path.startsWith('/scrutateur') }">
+        <router-link v-if="auth.isAdmin || store.electionCourante?.isDelegue" to="/scrutateur" class="nav-link" :class="{ active: $route.path.startsWith('/scrutateur') }">
           Mes bureaux
+        </router-link>
+        <router-link v-if="auth.isAdmin || store.electionCourante?.isOwner" to="/gestion" class="nav-link" :class="{ active: $route.path.startsWith('/gestion') }">
+          Gestion
         </router-link>
         <router-link v-if="auth.isAdmin" to="/admin" class="nav-link" :class="{ active: $route.name === 'admin' }">
           ⚙ Admin
+        </router-link>
+        <router-link to="/preferences" class="nav-link" :class="{ active: $route.name === 'preferences' }">
+          Mon profil
         </router-link>
         <button class="nav-link nav-link--accent" @click="logout">
           Déconnexion
@@ -45,13 +75,50 @@
 
 <script setup>
 import { useAuthStore } from '@/stores/auth'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
+import { ref, onMounted, watch } from "vue";
+import {useElectionStore} from "@/stores/election";
+import {authUserAPI} from "@/api";
 
 const auth = useAuthStore()
 const router = useRouter()
+const route = useRoute()
+const store = useElectionStore()
+const selectedElectionId = ref('')
 
+async function selectElection(id) {
+  console.log("Changement élection")
+  await store.chargerElection(id)
+  console.log("changement terminé")
+}
+
+async function subscribe(electionId) {
+  await authUserAPI.joinElection(electionId)
+  await store.chargerElections(true)
+}
+async function unsubscribe(electionId) {
+  await authUserAPI.leaveElection(electionId)
+  await store.chargerElections(true)
+
+}
 function logout() {
   auth.logout()
+  store.clearStore()
   router.push('/')
 }
+
+onMounted(async () => {
+  await store.chargerElections()
+  if(store.electionCourante) selectedElectionId.value = store.electionCourante.id
+})
+/*
+watch(() => route.path, async () => {
+  await store.chargerElections()
+  if(store.electionCourante) selectedElectionId.value = store.electionCourante.id
+})
+watch(() => store.electionCourante, async () => {
+  if(store.electionCourante) selectedElectionId.value = store.electionCourante.id
+})
+*/
+
 </script>

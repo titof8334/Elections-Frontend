@@ -6,7 +6,7 @@ const routes = [
     path: '/',
     name: 'accueil',
     component: () => import('@/views/AccueilView.vue'),
-    meta: { title: 'Résultats en direct' }
+    meta: { title: "Résultats en direct" }
   },
   {
     path: '/bureau/:id',
@@ -43,6 +43,12 @@ const routes = [
     name: 'preferences',
     component: () => import('@/views/PreferencesView.vue'),
     meta: { title: 'Mes préférences', requiresAuth: true }
+  },
+  {
+    path: '/gestion',
+    name: 'gestion',
+    component: () => import('@/views/OwnerView.vue'),
+    meta: { title: 'Gestion', requiresAuth: true }
   },
   {
     path: '/admin',

@@ -153,14 +153,13 @@ import { ref, computed, reactive, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useElectionStore } from '@/stores/election'
 import { useAuthStore } from '@/stores/auth'
-import { scrutateurAPI } from '@/api'
+import { delegueAPI } from '@/api'
 
 const route = useRoute()
 const store = useElectionStore()
 const auth = useAuthStore()
 
 const loading = ref(true)
-const bureau = ref(null)
 const messageSucces = ref('')
 const messageErreur = ref('')
 const savingBureau = ref(false)
@@ -203,7 +202,7 @@ function taux(votants) {
 }
 
 function remplirFormulaires() {
-  if (!bureau.value) return
+  if (!store.bureauCourant) return
   formBureau.inscrits = bureau.value.inscrits
   formBureau.bulletinsDepouilles = bureau.value.bulletinsDepouilles
   formBureau.bulletinsNuls = bureau.value.bulletinsNuls
@@ -235,7 +234,7 @@ async function sauvegarderBureau() {
   savingBureau.value = true
   try {
     await store.mettreAJourBureau(bureau.value.id, { ...formBureau })
-    bureau.value = await store.chargerBureau(bureau.value.id)
+    await store.chargerBureau(bureau.value.id)
     showMessage('Informations enregistrées ✓')
   } catch (e) {
     showMessage(e.response?.data?.reason || 'Erreur lors de la sauvegarde', 'erreur')
@@ -248,7 +247,7 @@ async function sauvegarderParticipation(heure) {
   const votants = participationForm[heure]
   if (votants === null || votants === undefined) return
   try {
-    await scrutateurAPI.upsertParticipation(bureau.value.id, heure, votants)
+    await delegueAPI.upsertParticipation(bureau.value.id, heure, votants)
     bureau.value = await store.chargerBureau(bureau.value.id)
     showMessage(`Participation de ${heure} enregistrée ✓`)
   } catch (e) {
@@ -263,7 +262,7 @@ async function sauvegarderResultats(estFinal) {
     const promises = store.candidats
       .filter(c => resultatForm[c.id] !== null && resultatForm[c.id] !== undefined)
       .map(c =>
-        scrutateurAPI.upsertResultat(bureau.value.id, {
+        delegueAPI.upsertResultat(bureau.value.id, {
           candidatId: c.id,
           voix: Number(resultatForm[c.id]) || 0,
           bulletinsDepouilles,

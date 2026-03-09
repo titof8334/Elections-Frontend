@@ -1,8 +1,11 @@
 import { defineStore } from 'pinia'
-import { publicAPI, scrutateurAPI, adminAPI } from '@/api'
+import { publicAPI, delegueAPI, ownerAPI, adminAPI, authUserAPI} from '@/api'
+import {useAuthStore} from "@/stores/auth";
 
 export const useElectionStore = defineStore('election', {
   state: () => ({
+    elections: [],
+    electionCourante: null,
     synthese: null,
     bureaux: [],
     candidats: [],
@@ -22,9 +25,21 @@ export const useElectionStore = defineStore('election', {
   },
 
   actions: {
+    clearStore() {
+      this.elections = []
+      this.electionCourante = null
+      this.bureaux = []
+      this.bureauCourant = null
+      this.synthese = null
+      this.candidats = []
+      this.loading = false
+      this.error = null
+      this.lastUpdate = null
+    },
+
     async chargerSynthese() {
       try {
-        const res = await publicAPI.getSynthese()
+        const res = await publicAPI.getSynthese(this.electionCourante.id)
         this.synthese = res.data
         this.lastUpdate = new Date()
       } catch (err) {
@@ -32,23 +47,48 @@ export const useElectionStore = defineStore('election', {
       }
     },
 
-    async chargerBureaux() {
+    async chargerElections(all = true) {
       try {
-        const res = await publicAPI.getBureaux()
-        this.bureaux = res.data
+        const res = all ? await publicAPI.getElections() : await authUserAPI.joinedElections()
+        this.elections = res.data
+        if (this.elections.length > 0) {
+          if (!this.electionCourante || !this.elections.some(e => e.id == this.electionCourante.id)) {
+            this.electionCourante = this.elections.find(e => e.isOwner)
+                || this.elections.find(e => e.isDelegue)
+                || this.elections.find(e => e.isSubscriber)
+                || this.elections[0]
+          }
+        } else {
+          this.electionCourante = undefined
+        }
+        console.log("electionCourante")
+        console.log(this.electionCourante)
       } catch (err) {
-        this.error = 'Erreur lors du chargement des bureaux'
+        this.error = 'Erreur lors du chargement des élections'
+      }
+    },
+    async chargerUsers(all = false) {
+      try {
+        if(all) {
+          const res = await adminAPI.getUsers()
+          return res.data
+        } else {
+          const res = await ownerAPI.getUsers(this.electionCourante.id)
+          return res.data
+        }
+      } catch (err) {
+        this.error = 'Erreur lors du chargement des élections'
       }
     },
 
-    async chargerBureau(id) {
+    async chargerElection(id) {
       this.loading = true
       try {
-        const res = await publicAPI.getBureau(id)
-        this.bureauCourant = res.data
+        const res = await publicAPI.getElection(id)
+        this.electionCourante = res.data
         return res.data
       } catch (err) {
-        this.error = 'Bureau introuvable'
+        this.error = 'Election introuvable'
         return null
       } finally {
         this.loading = false
@@ -57,22 +97,25 @@ export const useElectionStore = defineStore('election', {
 
     async chargerCandidats() {
       try {
-        const res = await publicAPI.getCandidats()
+        const res = await publicAPI.getCandidats(this.electionCourante.id)
+        console.log("candidats : ")
+        console.log(res.data)
         this.candidats = res.data
+        return this.candidats
       } catch (err) {
         this.error = 'Erreur lors du chargement des candidats'
       }
     },
 
     async sauvegarderParticipation(bureauId, heure, votants) {
-      const res = await scrutateurAPI.upsertParticipation(bureauId, heure, votants)
+      const res = await delegueAPI.upsertParticipation(bureauId, heure, votants)
       // Refresh bureau
       await this.chargerBureau(bureauId)
       return res.data
     },
 
     async sauvegarderResultat(bureauId, candidatId, voix, bulletinsDepouilles, estFinal = false) {
-      const res = await scrutateurAPI.upsertResultat(bureauId, {
+      const res = await delegueAPI.upsertResultat(bureauId, {
         candidatId, voix, bulletinsDepouilles, estFinal
       })
       await this.chargerBureau(bureauId)
@@ -80,44 +123,91 @@ export const useElectionStore = defineStore('election', {
     },
 
     async mettreAJourBureau(id, data) {
-      const res = await scrutateurAPI.updateBureau(id, data)
+      const res = await delegueAPI.updateBureau(id, data)
       await this.chargerBureau(id)
       return res.data
     },
 
     // Admin actions
+    async creerElection(data) {
+      console.log("création élection : ",data)
+      const res = await adminAPI.createElection(data)
+      await this.chargerElections()
+      return res.data
+    },
+    async modifierElection(id, data) {
+      console.log("modification élection : ",id,data)
+      const res = await ownerAPI.updateElection(id, data)
+      await this.chargerElections()
+      return res.data
+    },
+    async supprimerElection(id,all = true) {
+      await ownerAPI.deleteElection(id)
+      await this.chargerElections()
+    },
+
+    // ****** BUREAUX ******
+
+    async chargerBureaux(withUsers = false) {
+      try {
+        const res = withUsers ? await ownerAPI.getBureaux(this.electionCourante.id) : await publicAPI.getBureaux(this.electionCourante.id)
+        this.bureaux = res.data
+      } catch (err) {
+        this.error = 'Erreur lors du chargement des bureaux'
+      }
+    },
+    async chargerBureau(id,withUsers = false) {
+      this.loading = true
+      try {
+        const res = withUsers ? await ownerAPI.getBureau(id) : await publicAPI.getBureau(id)
+        this.bureauCourant = res.data
+      } catch (err) {
+        this.error = 'Bureau introuvable'
+        return null
+      } finally {
+        this.loading = false
+      }
+    },
     async creerBureau(data) {
-      const res = await adminAPI.createBureau(data)
-      await this.chargerBureaux()
+      const res = await ownerAPI.createBureau(this.electionCourante.id,data)
+      await this.chargerBureaux(true)
       return res.data
     },
-
-    async modifierBureau(id, data) {
-      const res = await adminAPI.updateBureau(id, data)
-      await this.chargerBureaux()
+    async modifierBureau(id, data, withUsers = false) {
+      const res = await delegueAPI.updateBureau(this.electionCourante.id,id, data)
+      await this.chargerBureaux(true)
       return res.data
     },
-
     async supprimerBureau(id) {
-      await adminAPI.deleteBureau(id)
-      await this.chargerBureaux()
+      await ownerAPI.deleteBureau(this.electionCourante.id,id)
+      await this.chargerBureaux(true)
     },
 
     async creerCandidat(data) {
-      const res = await adminAPI.createCandidat(data)
+      const res = await ownerAPI.createCandidat(this.electionCourante.id,data)
       await this.chargerCandidats()
       return res.data
     },
-
     async modifierCandidat(id, data) {
-      const res = await adminAPI.updateCandidat(id, data)
+      const res = await ownerAPI.updateCandidat(this.electionCourante.id,id, data)
       await this.chargerCandidats()
       return res.data
     },
-
     async supprimerCandidat(id) {
-      await adminAPI.deleteCandidat(id)
+      await ownerAPI.deleteCandidat(this.electionCourante.id,id)
       await this.chargerCandidats()
     },
+    async chargerProfil() {
+      this.loading = true
+      try {
+        const res = await authUserAPI.profile()
+        this.loading = false
+        return res.data
+      } catch (err) {
+        this.error = 'Profil introuvable'
+        this.loading = false
+        return null
+      }
+    }
   }
 })

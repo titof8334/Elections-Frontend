@@ -55,7 +55,9 @@ async function handleSSO() {
     await auth.loginWithSSO(redirectTo)
     // La page est redirigée vers Zitadel — la suite se passe dans CallbackView
   } catch (e) {
-    erreur.value     = 'Impossible de contacter le service d\'authentification.'
+    console.error('[SSO] signinRedirect a échoué :', e)
+    const detail = e?.message || e?.error_description || String(e)
+    erreur.value     = `Impossible de contacter le service d'authentification. Détail : ${detail}`
     chargement.value = false
   }
 }

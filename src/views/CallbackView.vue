@@ -21,10 +21,12 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { handleCallback } from '@/services/oidc'
 import { useAuthStore } from '@/stores/auth'
+import { useElectionStore } from '@/stores/election'
 
 const router = useRouter()
 const auth  = useAuthStore()
 const erreur = ref(null)
+const store = useElectionStore()
 
 onMounted(async () => {
   try {
@@ -35,12 +37,23 @@ onMounted(async () => {
     const ok = await auth.initFromOidc()
 
     if (!ok) {
-      erreur.value = 'Impossible de récupérer le profil utilisateur.'
+      erreur.value = auth.error || 'Impossible de récupérer le profil utilisateur.'
       return
     }
-
+    let redirectTo = oidcUser?.state ?? '/'
     // Redirige vers la route demandée avant le login, ou /scrutateur par défaut
-    const redirectTo = oidcUser?.state || '/scrutateur'
+    if(auth.user.elections.length == 1) {
+      store.electionCourante = auth.user.elections[0]
+    }
+    if(auth.user.isAdmin) {
+      redirectTo = '/admin'
+    } else if(store.electionCourante) {
+      if(store.electionCourante.isOwner) {
+        redirectTo = '/admin'
+      } else if(store.electionCourante.role == 'delegue') {
+        redirectTo = '/scrutateur'
+      }
+    }
     router.replace(redirectTo)
   } catch (e) {
     console.error('[OIDC Callback]', e)
