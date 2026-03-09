@@ -118,7 +118,7 @@
         </div>
         <div class="form-group">
           <label class="form-label">Email</label>
-          <input v-model="formUser.email" type="email" class="form-control" disabled/>
+          <input v-model="formUser.email" type="email" class="form-control" />
         </div>
         <div class="form-group">
           <label class="form-label">Administrateur</label>
