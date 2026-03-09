@@ -36,6 +36,10 @@
         <div class="panel-header">
           <h2 class="section-title" style="font-size: 1.4rem">Modifier l'élection</h2>
         </div>
+        <div class="form-group">
+          <label class="form-label">Nom</label>
+          <input v-model="formElection.nom" type="text" class="form-control" placeholder="Municipales Sète 2026" />
+        </div>
         <div style="display: flex; gap: 0.75rem; justify-content: flex-end">
           <button class="btn btn--fantome" @click="annulerElection">Annuler</button>
           <button class="btn btn--primaire" @click="sauvegarderElection">
@@ -70,8 +74,8 @@
                 <td>{{ bureau.nom }}</td>
                 <td style="font-size: 0.85rem; color: var(--texte-doux)">{{ bureau.adresse }}</td>
                 <td>
-                  <span v-if="delegue(bureau)"><u>{{ delegue(bureau).nom + ' ' + delegue(bureau).prenom }}</u></span>
-                  <span v-if="delegue(bureau) && assesseurs(bureau).length"> / </span>
+                  <span v-if="delegue(bureau).length"><u>{{ delegue(bureau).map(u => u.nom + ' ' + u.prenom).join(",") }}</u></span>
+                  <span v-if="delegue(bureau).length && assesseurs(bureau).length"> / </span>
                   <span v-if="assesseurs(bureau).length"><i>{{
                       assesseurs(bureau).map(u => u.nom + ' ' + u.prenom+' ('+u.dispPeriode+')').join(",")
                     }}</i></span>
@@ -191,8 +195,6 @@
       <div class="alert alert--erreur" v-if="messageErreur">{{ messageErreur }}</div>
 
     </div>
-
-    <!-- ===== MODAL ELECTION ===== -->
 
     <!-- ===== MODAL BUREAU ===== -->
     <div class="modal-overlay" v-if="showModalBureau" @click.self="showModalBureau = false">
@@ -418,7 +420,7 @@ async function activateTab(id) {
       await store.chargerCandidats()
       break;
     case "utilisateurs":
-      users.value = await store.chargerUsers(auth.isAdmin)
+      users.value = await store.chargerUsers()
       break;
     case "danger":
       break;
@@ -429,7 +431,7 @@ function assesseurs(bureau) {
   return bureau.users.filter(u => u.role === 'assesseur')
 }
 function delegue(bureau) {
-  return bureau.users.find(u => u.role === 'delegue')
+  return bureau.users.filter(u => u.role === 'delegue')
 }
 function dispsDelegue(bureau) {
   return bureau.users.filter(u => u.dispDelegue)
