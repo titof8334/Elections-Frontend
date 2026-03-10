@@ -56,7 +56,7 @@
                 <th>N°</th>
                 <th>Nom</th>
                 <th>Adresse</th>
-                <th><u>Délégué</u> / <i>assesseurs</i></th>
+                <th>Assesseurs</th>
                 <th>Disponibilités</th>
               </tr>
             </thead>
@@ -66,11 +66,9 @@
                 <td>{{ bureau.nom }}</td>
                 <td style="font-size: 0.85rem; color: var(--texte-doux)">{{ bureau.adresse }}</td>
                 <td>
-                  <span v-if="delegue(bureau).length"><u>{{ delegue(bureau).map(u => u.nom + ' ' + u.prenom).join(",") }}</u></span>
-                  <span v-if="delegue(bureau).length && assesseurs(bureau).length"> / </span>
-                  <span v-if="assesseurs(bureau).length"><i>{{
-                      assesseurs(bureau).map(u => u.nom + ' ' + u.prenom+' ('+u.dispPeriode+')').join(",")
-                    }}</i></span>
+                  <span v-if="assesseurs(bureau).length" v-for="u in assesseurs(bureau)" :key="u.id" style="display:block">
+                    {{ u.nom }} {{ u.prenom }} {{ u.isTitulaire ? '(titulaire)' : '(suppléant)' }}
+                  </span>
                 </td>
                 <td>
                   Délégué(s) : <span><i>{{
@@ -156,7 +154,7 @@
                   <span v-if="user.role && (user.role === 'delegue' || user.role === 'assesseur')" class="badge badge--bleu">{{ user.role }} {{ user.isTitulaire ? '(Titulaire)' : '(Suppléant)'}}</span>
                 </td>
                 <td>
-                  <template v-for="bureau in user.bureaux" :key="bureau.id">{{ nomBureau(bureau.id) }} {{ user.role == 'assesseur' ? '('+bureau.periode+')' : ''}}<br></template>
+                  <template v-for="bureau in user.bureaux" :key="bureau.id">{{ nomBureau(bureau.id) }} {{ user.role == 'assesseur' && bureau.periode != 'J' ? '('+bureau.periode+')' : ''}}<br></template>
                 </td>
                 <td>{{ nomBureau(user.dispBureauId) }}{{ user.dispBureauId && (user.dispAssesseur || user.dispDelegue) ? ' : ' : ' '}}{{ user.dispAssesseur ? 'assesseur ('+user.periode+')' : ''}}{{ user.dispAssesseur && user.dispDelegue ? ' / ' : ' '}}{{ user.dispDelegue ? 'Délégué' : ''}}</td>
               </tr>
