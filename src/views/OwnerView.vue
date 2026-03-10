@@ -3,6 +3,21 @@
     <div class="container">
       <header class="page-header" style="margin-bottom: 2rem">
         <h1 class="section-title">Gestion des bureaux, candidats et délégués</h1>
+        <div class="form-group">
+          <label class="form-label">Nom</label>
+          <input v-model="formElection.nom" type="text" class="form-control" placeholder="Municipales Sète 2026" />
+        </div>
+        <div style="display: flex; gap: 0.75rem; justify-content: flex-end">
+          <button class="btn btn--primaire" @click="sauvegarderElection">
+            Mettre à jour
+          </button>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Délégués</label>
+          <h4 v-for="delegue in delegues()" :key="delegue.id">
+            {{delegue.nom + ' ' + delegue.prenom + (delegue.isTitulaire ? '(Titulaire)' : ' (Suppléant)') }} <br>
+          </h4>
+        </div>
       </header>
 
       <div class="alert alert--succes" v-if="messageSucces">{{ messageSucces }}</div>
@@ -10,9 +25,6 @@
 
       <!-- Onglets -->
       <div v-if="store.electionCourante" class="admin-tabs">
-        <button class="admin-tab" :class="{ 'admin-tab--active': activeTab === 'elections' }" @click="activateTab('election')">
-          Election
-        </button>
         <button class="admin-tab" :class="{ 'admin-tab--active': activeTab === 'candidats' }" @click="activateTab('candidats')">
           Candidats
         </button>
@@ -31,27 +43,7 @@
       </div>
 
 
-      <!-- ===== ELECTION ===== -->
-      <section v-if="activeTab === 'election'" class="admin-panel">
-        <div class="panel-header">
-          <h2 class="section-title" style="font-size: 1.4rem">Modifier l'élection</h2>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Nom</label>
-          <input v-model="formElection.nom" type="text" class="form-control" placeholder="Municipales Sète 2026" />
-        </div>
-        <div style="display: flex; gap: 0.75rem; justify-content: flex-end">
-          <button class="btn btn--fantome" @click="annulerElection">Annuler</button>
-          <button class="btn btn--primaire" @click="sauvegarderElection">
-            Mettre à jour
-          </button>
-          <button class="btn btn--danger btn--sm" @click.stop="supprimerElection">
-            Supprimer
-          </button>
-        </div>
-      </section>
-
-      <!-- ===== BUREAUX ===== -->
+<!-- ===== BUREAUX ===== -->
       <section v-if="activeTab === 'bureaux'" class="admin-panel">
         <div class="panel-header">
           <h2 class="section-title" style="font-size: 1.4rem">Bureaux de vote</h2>
@@ -91,7 +83,7 @@
                 </td>
               </tr>
               <tr v-if="store.bureaux.length === 0">
-                <td colspan="6" style="text-align: center; color: var(--texte-doux)">
+                <td colspan="5" style="text-align: center; color: var(--texte-doux)">
                   Aucun bureau configuré
                 </td>
               </tr>
@@ -127,7 +119,7 @@
                 <td>{{ c.liste }}</td>
               </tr>
               <tr v-if="store.candidats.length === 0">
-                <td colspan="5" style="text-align: center; color: var(--texte-doux)">
+                <td colspan="4" style="text-align: center; color: var(--texte-doux)">
                   Aucun candidat configuré
                 </td>
               </tr>
@@ -149,6 +141,7 @@
               <tr>
                 <th>Nom</th>
                 <th>Email</th>
+                <th>Gestionnaire</th>
                 <th>Rôle</th>
                 <th>Bureau(x) assigné(s)</th>
                 <th>Disponibilité</th>
@@ -158,10 +151,9 @@
               <tr v-for="user in users" :key="user.id" @click="ouvrirModalUser(user)">
                 <td><strong>{{ user.nom }} {{ user.prenom }}</strong></td>
                 <td>{{ user.email }}</td>
+                <td><span v-if="user.isOwner" class="badge badge--vert">Oui</span></td>
                 <td>
-                  <span v-if="user.isAdmin" class="badge badge--rouge">Admin</span>
-                  <span v-if="user.isOwner" class="badge badge--vert">Propriétaire</span>
-                  <span v-if="user.role && (user.role === 'delegue' || user.role === 'assesseur')" class="badge badge--bleu">{{ user.role }}</span>
+                  <span v-if="user.role && (user.role === 'delegue' || user.role === 'assesseur')" class="badge badge--bleu">{{ user.role }} {{ user.isTitulaire ? '(Titulaire)' : '(Suppléant)'}}</span>
                 </td>
                 <td>
                   <template v-for="bureau in user.bureaux" :key="bureau.id">{{ nomBureau(bureau.id) }} {{ user.role == 'assesseur' ? '('+bureau.periode+')' : ''}}<br></template>
@@ -169,7 +161,7 @@
                 <td>{{ nomBureau(user.dispBureauId) }}{{ user.dispBureauId && (user.dispAssesseur || user.dispDelegue) ? ' : ' : ' '}}{{ user.dispAssesseur ? 'assesseur ('+user.periode+')' : ''}}{{ user.dispAssesseur && user.dispDelegue ? ' / ' : ' '}}{{ user.dispDelegue ? 'Délégué' : ''}}</td>
               </tr>
               <tr v-if="users.length === 0">
-                <td colspan="5" style="text-align: center; color: var(--texte-doux)">Aucun utilisateur</td>
+                <td colspan="6" style="text-align: center; color: var(--texte-doux)">Aucun utilisateur</td>
               </tr>
             </tbody>
           </table>
@@ -311,11 +303,14 @@
           </div>
           <div class="form-group">
             <label class="form-label">Rôle</label>
-            <select v-model="formUser.role" class="form-control">
-              <option value="aucun">Aucun</option>
-              <option value="assesseur">Assesseur</option>
-              <option value="delegue">Délégué</option>
-            </select>
+            <div style="display: flex; align-items: center; gap: 0.75rem">
+              <select v-model="formUser.role" class="form-control">
+                <option value="aucun">Aucun</option>
+                <option value="assesseur">Assesseur</option>
+                <option value="delegue">Délégué</option>
+              </select>
+              <label v-if="formUser.role !== 'aucun'" class="checkbox-label">Titulaire <input v-model="formUser.isTitulaire" type="checkbox" class="form-control"/></label>
+            </div>
           </div>
           <div v-if="formUser.role === 'assesseur'" class="form-group">
             <label class="form-label">Bureau assigné</label>
@@ -385,36 +380,31 @@
 </template>
 
 <script setup>
-import {ref, reactive, computed, onMounted, watch} from 'vue'
+import {ref, reactive, onMounted, watch} from 'vue'
 import { useElectionStore } from '@/stores/election'
 import { useAuthStore } from '@/stores/auth'
-import { adminAPI, authAPI, ownerAPI } from '@/api'
+import { adminAPI, ownerAPI } from '@/api'
 
 const store = useElectionStore()
 const auth = useAuthStore()
 const messageSucces = ref('')
 const messageErreur = ref('')
 
-const activeTab = ref('bureaux')
+const activeTab = ref('candidats')
 const users = ref([])
-const showModalElection = ref(false)
 const showModalBureau = ref(false)
 const showModalCandidat = ref(false)
 const showModalUser = ref(false)
-const electionAssignation = ref(null)
 
 const formElection = reactive({ id: null, nom: '' })
 const formBureau = reactive({ id: null, numero: 1, nom: '', adresse: '', inscrits: 0 })
 const formCandidat = reactive({ id: null, nom: '', prenom: '', liste: '', couleur: '#003189', ordre: 1 })
-const formUser = reactive({ id: null, nom: '', prenom: '', email: '', bureauAssesseur: undefined, periodeAssesseur: 'J', bureauxDelegue: [], isAdmin: false, role: 'aucun', bureaux: [], isOwner: false, dispBureauId: null, dispAssesseur: false, dispDelegue: false, periode: "J" })
+const formUser = reactive({ id: null, nom: '', prenom: '', email: '', bureauAssesseur: undefined, periodeAssesseur: 'J', bureauxDelegue: [], isAdmin: false, role: 'aucun', bureaux: [], isTitulaire: false, isOwner: false, dispBureauId: null, dispAssesseur: false, dispDelegue: false, periode: "J" })
 
 async function activateTab(id) {
   switch(id) {
-    case "election":
-      Object.assign(formElection, { id: store.electionCourante.id, nom: store.electionCourante.nom })
-      break;
     case "bureaux":
-      await store.chargerBureaux(true)
+      await store.chargerBureauxWithUsers()
       break;
     case "candidats":
       await store.chargerCandidats()
@@ -433,17 +423,14 @@ function assesseurs(bureau) {
 function delegue(bureau) {
   return bureau.users.filter(u => u.role === 'delegue')
 }
+function delegues() {
+  return users.value.filter(u => u.role === 'delegue')
+}
 function dispsDelegue(bureau) {
   return bureau.users.filter(u => u.dispDelegue)
 }
 function dispsAssesseur(bureau) {
   return bureau.users.filter(u => u.dispAssesseur)
-}
-function estAssesseur(user,bureauId) {
-  return bureau.users.find(u => u.id == user.id).role === 'assesseur'
-}
-function estDelegue(user,bureauId) {
-  return bureau.users.find(u => u.id == user.id).role === 'delegue'
 }
 
 function showMsg(msg, type = 'succes') {
@@ -460,16 +447,6 @@ async function sauvegarderElection() {
   } catch (e) {
     console.error("Erreur sauvegarderElection :", e)
     showMsg(e.response?.data?.reason || 'Erreur', 'erreur')
-  }
-}
-async function supprimerElection(id) {
-  if (!confirm('Supprimer cette élection ? Toutes ses données seront perdues.')) return
-  try {
-    await store.supprimerElection(id)
-    showMsg('Election supprimée ✓')
-    showModalElection.value = false
-  } catch (e) {
-    showMsg('Erreur lors de la suppression', 'erreur')
   }
 }
 
@@ -494,7 +471,7 @@ async function sauvegarderBureau() {
       await store.creerBureau({ numero: formBureau.numero, nom: formBureau.nom, adresse: formBureau.adresse, inscrits: formBureau.inscrits })
       showMsg('Bureau créé ✓')
     }
-    await store.chargerBureaux(true)
+    await store.chargerBureauxWithUsers()
     showModalBureau.value = false
   } catch (e) {
     showMsg(e.response?.data?.reason || 'Erreur', 'erreur')
@@ -573,7 +550,6 @@ async function sauvegarderCandidat() {
 }
 async function supprimerCandidat(id) {
   if (!confirm('Supprimer ce candidat ?')) return
-  showModalCandidat.value = true
   try {
     await store.supprimerCandidat(id)
     showMsg('Candidat supprimé ✓')
@@ -585,7 +561,6 @@ async function supprimerCandidat(id) {
 
 // ===== UTILISATEURS =====
 function ouvrirModalUser(user = null) {
-  console.log(user)
   if (user) {
     Object.assign(formUser, {
       id: user.id,
@@ -595,6 +570,7 @@ function ouvrirModalUser(user = null) {
       isAdmin: user.isAdmin,
       isOwner: user.isOwner,
       role: user.role,
+      isTitulaire: user.isTitulaire,
       bureauxDelegue: user.role == 'delegue' ? user.bureaux.map(b => b.id) : [],
       bureauAssesseur: user.role == 'assesseur' && user.bureaux && user.bureaux.length > 0 ? user.bureaux[0].id : undefined,
       periodeAssesseur: user.role == 'assesseur' && user.bureaux && user.bureaux.length > 0 ? user.bureaux[0].periode : "J",
@@ -608,7 +584,7 @@ function ouvrirModalUser(user = null) {
     Object.assign(formUser, {
       id: null,
       nom: '', prenom: '', email: '',
-      isAdmin: false, isOwner: false, role: 'aucun',
+      isAdmin: false, isOwner: false, role: 'aucun', isTitulaire: false,
       bureauxDelegue: [],
       bureauAssesseur: undefined,
       periodeAssesseur: "J",
@@ -624,7 +600,7 @@ async function sauvegarderUser() {
       bureaux = formUser.bureauxDelegue.map(b => { return {id: b,periode: ''} } )
       break;
     case 'assesseur':
-      bureaux = formUser.bureauAssesseur && formUser.bureauAssesseur ? [{id: formUser.bureauAssesseur, periode: formUser.periodeAssesseur }] : []
+      bureaux = formUser.bureauAssesseur ? [{id: formUser.bureauAssesseur, periode: formUser.periodeAssesseur }] : []
       break;
     default:
       break;
@@ -635,6 +611,7 @@ async function sauvegarderUser() {
       prenom: formUser.prenom,
       email: formUser.email,
       role: formUser.id ? formUser.role : "aucun",
+      isTitulaire: formUser.id ? formUser.isTitulaire : false,
       isAdmin: formUser.id ? formUser.isAdmin : false,
       isOwner: formUser.id ? formUser.isOwner : false,
       bureaux: formUser.id ? bureaux : [],
@@ -683,7 +660,7 @@ async function resetElection() {
   if (!confirm('⚠ ATTENTION : Êtes-vous sûr de vouloir effacer TOUTES les données de vote ? Cette action est irréversible.')) return
   if (!confirm('Dernière confirmation : effacer tous les résultats et participations ?')) return
   try {
-    await adminAPI.resetElection()
+    await ownerAPI.resetElection(store.electionCourante.id)
     await store.chargerBureaux()
     showMsg('Données réinitialisées ✓')
   } catch (e) {
@@ -692,12 +669,18 @@ async function resetElection() {
 }
 
 onMounted(async () => {
-  await store.chargerElections(false)
+  if (!store.electionCourante) return
+  await store.chargerElection()
+  Object.assign(formElection, { id: store.electionCourante.id, nom: store.electionCourante.nom })
+  users.value = await store.chargerUsers()
   await activateTab(activeTab.value)
 })
 
 watch(() => store.electionCourante, async (newVal, oldVal) => {
   if (newVal?.id !== oldVal?.id) {
+    if (!newVal) return
+    Object.assign(formElection, { id: newVal.id, nom: newVal.nom })
+    users.value = await store.chargerUsers()
     await activateTab(activeTab.value)
   }
 })

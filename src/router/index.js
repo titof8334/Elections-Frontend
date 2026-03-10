@@ -79,7 +79,7 @@ router.beforeEach((to, from, next) => {
     return next('/login')
   }
   if (to.meta.guestOnly && auth.isAuthenticated) {
-    return next('/scrutateur')
+    return next('/')
   }
   next()
 })

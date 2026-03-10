@@ -41,12 +41,13 @@ export const publicAPI = {
   getElection:  (electionId) => api.get(`/elections/${electionId}`),
   getBureaux:  (electionId) => api.get(`/elections/${electionId}/bureaux`),
   getBureau:   (electionId,bureauId) => api.get(`/elections/${electionId}/bureaux/${bureauId}`),
+  getBureauSynthese:   (electionId,bureauId) => api.get(`/elections/${electionId}/bureaux/${bureauId}/synthese`),
   getCandidats: (electionId) => api.get(`/elections/${electionId}/candidats`),
 }
 
 // ===== UTILISATEUR AUTHENFIFIE =====
 export const authUserAPI = {
-  me: () => api.get(`/me/elections/${electionId}`),
+  me: (electionId) => api.get(`/me/elections/${electionId}`),
   updateMe: (data) => api.put('/me',data),
   updateMyPrefs: (userElectionId,data) => api.put(`/me/userElection/${userElectionId}`,data),
   joinElection: (electionId) => api.post(`/me/elections/${electionId}`,""),
@@ -59,7 +60,8 @@ export const authUserAPI = {
 export const delegueAPI = {
   updateBureau:         (electionId, id, data) => api.put(`/delegue/elections/${electionId}/bureaux/${id}`, data),
   upsertParticipation:  (electionId, bureauId, heure, votants) => api.post(`/delegue/elections/${electionId}/bureaux/${bureauId}/participations`, { heure, votants }),
-  upsertResultat:       (electionId, bureauId, data) => api.post(`/delegue/elections/${electionId}/bureaux/${bureauId}/resultats`, data)
+  upsertResultat:       (electionId, bureauId, data) => api.post(`/delegue/elections/${electionId}/bureaux/${bureauId}/resultats`, data),
+  getBureaux:           (electionId) => api.get(`/delegue/elections/${electionId}/bureaux`),
 }
 
 // ===== OWNER =====
@@ -90,17 +92,18 @@ export const ownerAPI = {
   deleteCandidat: (electionId, id) => api.delete(`/owner/elections/${electionId}/candidats/${id}`),
 
   // Reset
-  resetElection: () => api.delete(`/owner/elections/${electionId}/reset`),
+  resetElection: (electionId) => api.delete(`/owner/elections/${electionId}/reset`),
 }
 
 // ===== ADMIN =====
 export const adminAPI = {
   // Elections
   createElection: (data) => api.post('/admin/elections', data),
-  createOwner:    (electionId,ownerId) => api.post(`/admin/elections/${id}/owner/${ownerId}`),
+  createOwner:    (electionId,ownerId) => api.post(`/admin/elections/${electionId}/owner/${ownerId}`),
 
   // Users
   getUsers:       () => api.get('/admin/users'),
+  createUser:     (data) => api.post('/admin/users', data),
   updateUser:     (id,data) => api.put(`/admin/users/${id}`, data),
   deleteUser:     (id) => api.delete(`/admin/users/${id}`),
 }

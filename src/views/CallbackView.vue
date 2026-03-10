@@ -42,17 +42,18 @@ onMounted(async () => {
     }
     let redirectTo = oidcUser?.state ?? '/'
     // Redirige vers la route demandée avant le login, ou /scrutateur par défaut
-    if(auth.user.elections.length == 1) {
-      store.electionCourante = auth.user.elections[0]
+    store.elections = auth.user.elections
+    if(auth.user.elections.length > 0) {
+      let election = store.electionCourante?.id ? store.elections.find(e => e.id == store.electionCourante.id) : undefined
+      store.electionCourante = election ?? (store.elections.find(e => e.isOwner)
+            || store.elections.find(e => e.isScrutateur)
+            || store.elections.find(e => e.isSubscriber)
+            || store.elections[0])
+    } else {
+      store.electionCourante = undefined
     }
     if(auth.user.isAdmin) {
       redirectTo = '/admin'
-    } else if(store.electionCourante) {
-      if(store.electionCourante.isOwner) {
-        redirectTo = '/admin'
-      } else if(store.electionCourante.role == 'delegue') {
-        redirectTo = '/scrutateur'
-      }
     }
     router.replace(redirectTo)
   } catch (e) {

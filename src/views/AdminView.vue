@@ -37,7 +37,7 @@
               <td>{{ c.nom }}</td>
             </tr>
             <tr v-if="store.elections.length === 0">
-              <td colspan="5" style="text-align: center; color: var(--texte-doux)">
+              <td colspan="1" style="text-align: center; color: var(--texte-doux)">
                 Aucune élection configurée
               </td>
             </tr>
@@ -71,7 +71,7 @@
                 </td>
               </tr>
               <tr v-if="users.length === 0">
-                <td colspan="5" style="text-align: center; color: var(--texte-doux)">Aucun utilisateur</td>
+                <td colspan="3" style="text-align: center; color: var(--texte-doux)">Aucun utilisateur</td>
               </tr>
             </tbody>
           </table>
@@ -86,7 +86,7 @@
     <!-- ===== MODAL ELECTION ===== -->
     <div class="modal-overlay" v-if="showModalElection" @click.self="showModalElection = false">
       <div class="modal-box">
-        <h2 class="modal-titre">{{ formElection.id ? "Modifier l'élection'" : 'Nouvelle élection' }}</h2>
+        <h2 class="modal-titre">{{ formElection.id ? "Modifier l'élection" : 'Nouvelle élection' }}</h2>
         <div class="form-group">
           <label class="form-label">Nom</label>
           <input v-model="formElection.nom" type="text" class="form-control" placeholder="Municipales Sète 2026" />
@@ -144,10 +144,10 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useElectionStore } from '@/stores/election'
 import { useAuthStore } from '@/stores/auth'
-import { adminAPI, authAPI, ownerAPI } from '@/api'
+import { adminAPI } from '@/api'
 
 const store = useElectionStore()
 const auth = useAuthStore()
@@ -158,8 +158,6 @@ const activeTab = ref('elections')
 const users = ref([])
 const showModalElection = ref(false)
 const showModalUser = ref(false)
-const electionAssignation = ref(undefined)
-
 const formElection = reactive({ id: null, nom: '' })
 const formUser = reactive({ id: null, nom: '', prenom: '', email: '', isAdmin: false})
 
@@ -184,23 +182,18 @@ function showMsg(msg, type = 'succes') {
 // ===== ELECTIONS =====
 function ouvrirModalElection(election = null) {
   if (election) {
-    electionAssignation.value = election
     Object.assign(formElection, { id: election.id, nom: election.nom })
   } else {
-    electionAssignation.value = undefined
     Object.assign(formElection, { id: null, nom: '' })
   }
   showModalElection.value = true
 }
 async function sauvegarderElection() {
-  console.log("sauvegarderElection : ",formElection)
   try {
     if (formElection.id) {
-      console.log("modification")
       await store.modifierElection(formElection.id, { nom: formElection.nom })
       showMsg('Election modifiée ✓')
     } else {
-      console.log("création")
       await store.creerElection({ nom: formElection.nom })
       showMsg('Election créée ✓')
     }

@@ -55,7 +55,7 @@
               </option>
             </select>
           </div>
-          <div class="form-group">
+          <div class="form-group" v-if="form.election">
             <label class="form-label">Disponibilité </label>
             <select v-model="form.bureau" class="form-control">
               <option :value="null">— Aucun —</option>
@@ -73,7 +73,7 @@
               <div class="card" style="padding: 1.0rem 1.0rem; margin-top: 0.5rem; background: var(--creme)">
                 <p style="font-size: 0.85rem; color: var(--texte-doux); margin: 0">
                   <span v-if="form.election.isOwner" class="badge" :class="'badge--bleu'" style="margin-left: 0.5rem">Propriétaire</span>
-                  <span v-if="form.election.role != 'aucun'" class="badge" :class="'badge--bleu'" style="margin-left: 0.5rem">{{ form.election.role }}</span>
+                  <span v-if="form.election.role != 'aucun'" class="badge" :class="'badge--bleu'" style="margin-left: 0.5rem">{{ form.election.role }} {{ form.election.isTitulaire ? '(Titulaire)' : '(Suppléant)'}}</span>
                   {{ bureauxLabel }}
                 </p>
               </div>
@@ -116,14 +116,18 @@ const form = reactive({
 })
 
 function remplirFormulaire() {
-  const election = store.electionCourante ? user.value.elections.find(e => e.electionId == store.electionCourante.id) : undefined
   if (!user.value) return
-  let bureau = election.dispBureauId ? election.tousBureaux.find(b => b.id == election.dispBureauId) : (election.tousBureaux.length ? election.tousBureaux[0] : undefined)
-  form.nom           = user.value.nom          ?? ''
-  form.prenom           = user.value.prenom           ?? ''
-  form.email         = user.value.email         ?? ''
-  form.isAdmin         = user.value.isAdmin         ?? ''
-  form.bureauId         = user.value.isAdmin         ?? ''
+  const election = store.electionCourante
+    ? user.value.elections.find(e => e.electionId == store.electionCourante.id)
+    : undefined
+  let bureau = election?.dispBureauId
+    ? election.tousBureaux.find(b => b.id == election.dispBureauId)
+    : (election?.tousBureaux?.length ? election.tousBureaux[0] : undefined)
+  form.nom           = user.value.nom ?? ''
+  form.prenom           = user.value.prenom ?? ''
+  form.email         = user.value.email ?? ''
+  form.isAdmin         = user.value.isAdmin ?? false
+  form.bureauId         = user.value.isAdmin ? (bureau?.id ?? undefined) : undefined
   form.elections = user.value.elections
   form.election = election
   form.bureau = bureau
@@ -163,7 +167,6 @@ async function sauvegarder() {
 }
 
 async function sauvegarderElection() {
-  console.log("SauvegarderElection")
   messageSucces.value = ''
   messageErreur.value = ''
   const payload = {
@@ -172,12 +175,8 @@ async function sauvegarderElection() {
     dispDelegue:   form.election.dispDelegue,
     periode: form.election.periode
   }
-  console.log("payload");
-  console.log(payload);
-//  if (form.password) payload.password = form.password
 
-  const ok = await auth.mettreAJourProfilElection(form.election.id,payload)
-  console.log("SauvegarderElection OK")
+  const ok = await auth.mettreAJourProfilElection(form.election.id, payload)
   if (ok) {
     messageSucces.value = 'Préférences enregistrées ✓'
     setTimeout(() => { messageSucces.value = '' }, 3500)

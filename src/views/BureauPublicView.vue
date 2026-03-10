@@ -4,11 +4,11 @@
 
       <div v-if="loading" class="spinner"></div>
 
-      <template v-else-if="bureauCourant">
+      <template v-else-if="store.bureauCourant">
         <div class="bureau-public-header">
           <router-link to="/" class="btn btn--fantome btn--sm">← Retour</router-link>
           <div>
-            <h1 class="section-title">Bureau {{ store.bureauCourant.numero }} — {{ bureauCourant.nom }}</h1>
+            <h1 class="section-title">Bureau {{ store.bureauCourant.numero }} — {{ store.bureauCourant.nom }}</h1>
             <p class="section-subtitle">{{ store.bureauCourant.adresse }}</p>
           </div>
           <span
@@ -144,7 +144,7 @@ const resultatsAvecCandidats = computed(() => {
 
 onMounted(async () => {
   await store.chargerCandidats()
-  await store.chargerBureau(route.params.id)
+  await store.chargerBureauSynthese(route.params.id)
   loading.value = false
 })
 </script>

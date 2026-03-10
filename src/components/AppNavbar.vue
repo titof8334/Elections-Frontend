@@ -10,7 +10,7 @@
         <text x="20" y="24" text-anchor="middle" font-size="9" fill="#c9a84c" font-weight="bold">✓</text>
       </svg>
       <router-link to="/" class="navbar__title">
-        <select v-model="selectedElectionId" @change="selectElection(selectedElectionId)" class="nav-select" :class="{ 'nav-select--placeholder': !selectedElectionId }">
+        <select v-model="selectedElectionId" @focus="store.chargerElections()" @change="selectElection(selectedElectionId)" class="nav-select" :class="{ 'nav-select--placeholder': !selectedElectionId }">
           <option value="" disabled>Choisir une élection</option>
           <template v-if="auth.user">
             <optgroup label="Mes élections">
@@ -30,7 +30,7 @@
         </select>
         &nbsp;
         <template v-if="auth.user">
-          <button v-if="!store.elections.find(e => e.id == selectedElectionId).isSubscriber" class="nav-link" @click="subscribe(selectedElectionId)">
+          <button v-if="!store.elections.find(e => e.id == selectedElectionId)?.isSubscriber" class="nav-link" @click="subscribe(selectedElectionId)">
             Soutenir
           </button>
           <button v-else class="nav-link nav-link--accent" @click="unsubscribe(selectedElectionId)">
@@ -53,10 +53,10 @@
         </router-link>
       </template>
       <template v-else>
-        <router-link v-if="auth.isAdmin || store.electionCourante?.isDelegue" to="/scrutateur" class="nav-link" :class="{ active: $route.path.startsWith('/scrutateur') }">
+        <router-link v-if="store.electionCourante?.isOwner || store.electionCourante?.isScrutateur" to="/scrutateur" class="nav-link" :class="{ active: $route.path.startsWith('/scrutateur') }">
           Mes bureaux
         </router-link>
-        <router-link v-if="auth.isAdmin || store.electionCourante?.isOwner" to="/gestion" class="nav-link" :class="{ active: $route.path.startsWith('/gestion') }">
+        <router-link v-if="store.electionCourante?.isOwner" to="/gestion" class="nav-link" :class="{ active: $route.path.startsWith('/gestion') }">
           Gestion
         </router-link>
         <router-link v-if="auth.isAdmin" to="/admin" class="nav-link" :class="{ active: $route.name === 'admin' }">
@@ -75,21 +75,18 @@
 
 <script setup>
 import { useAuthStore } from '@/stores/auth'
-import { useRouter, useRoute } from 'vue-router'
+import { useRouter } from 'vue-router'
 import { ref, onMounted, watch } from "vue";
 import {useElectionStore} from "@/stores/election";
 import {authUserAPI} from "@/api";
 
 const auth = useAuthStore()
 const router = useRouter()
-const route = useRoute()
 const store = useElectionStore()
 const selectedElectionId = ref('')
 
 async function selectElection(id) {
-  console.log("Changement élection")
   await store.chargerElection(id)
-  console.log("changement terminé")
 }
 
 async function subscribe(electionId) {
@@ -111,14 +108,9 @@ onMounted(async () => {
   await store.chargerElections()
   if(store.electionCourante) selectedElectionId.value = store.electionCourante.id
 })
-/*
-watch(() => route.path, async () => {
-  await store.chargerElections()
+
+watch(() => store.electionCourante, () => {
   if(store.electionCourante) selectedElectionId.value = store.electionCourante.id
 })
-watch(() => store.electionCourante, async () => {
-  if(store.electionCourante) selectedElectionId.value = store.electionCourante.id
-})
-*/
 
 </script>

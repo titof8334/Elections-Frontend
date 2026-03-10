@@ -87,7 +87,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useElectionStore } from '@/stores/election'
 
@@ -98,14 +98,14 @@ const loading = ref(true)
 watch(() => store.electionCourante, async (newElection) => {
   if (newElection) {
     loading.value = true
-    await store.chargerBureaux()
+    await store.chargerBureauxScrutateur()
     loading.value = false
   }
 })
 
 onMounted(async () => {
   if (store.electionCourante) {
-    await store.chargerBureaux()
+    await store.chargerBureauxScrutateur()
   }
   loading.value = false
 })

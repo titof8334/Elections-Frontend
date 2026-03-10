@@ -152,13 +152,11 @@
 import { ref, computed, reactive, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useElectionStore } from '@/stores/election'
-import { useAuthStore } from '@/stores/auth'
-import { delegueAPI } from '@/api'
 
 const route = useRoute()
 const store = useElectionStore()
-const auth = useAuthStore()
 
+const bureau = computed(() => store.bureauCourant)
 const loading = ref(true)
 const messageSucces = ref('')
 const messageErreur = ref('')
@@ -234,7 +232,8 @@ async function sauvegarderBureau() {
   savingBureau.value = true
   try {
     await store.mettreAJourBureau(bureau.value.id, { ...formBureau })
-    await store.chargerBureau(bureau.value.id)
+    await store.chargerBureauSynthese(bureau.value.id)
+    remplirFormulaires()
     showMessage('Informations enregistrées ✓')
   } catch (e) {
     showMessage(e.response?.data?.reason || 'Erreur lors de la sauvegarde', 'erreur')
@@ -247,8 +246,7 @@ async function sauvegarderParticipation(heure) {
   const votants = participationForm[heure]
   if (votants === null || votants === undefined) return
   try {
-    await delegueAPI.upsertParticipation(bureau.value.id, heure, votants)
-    bureau.value = await store.chargerBureau(bureau.value.id)
+    await store.sauvegarderParticipation(bureau.value.id, heure, votants)
     showMessage(`Participation de ${heure} enregistrée ✓`)
   } catch (e) {
     showMessage(e.response?.data?.reason || 'Erreur', 'erreur')
@@ -262,15 +260,9 @@ async function sauvegarderResultats(estFinal) {
     const promises = store.candidats
       .filter(c => resultatForm[c.id] !== null && resultatForm[c.id] !== undefined)
       .map(c =>
-        delegueAPI.upsertResultat(bureau.value.id, {
-          candidatId: c.id,
-          voix: Number(resultatForm[c.id]) || 0,
-          bulletinsDepouilles,
-          estFinal,
-        })
+        store.sauvegarderResultat(bureau.value.id, c.id, Number(resultatForm[c.id]) || 0, bulletinsDepouilles, estFinal)
       )
     await Promise.all(promises)
-    bureau.value = await store.chargerBureau(bureau.value.id)
     showMessage(estFinal ? 'Résultats finaux enregistrés ✓' : 'Résultats partiels enregistrés ✓')
   } catch (e) {
     showMessage(e.response?.data?.reason || 'Erreur lors de la sauvegarde', 'erreur')
@@ -281,14 +273,8 @@ async function sauvegarderResultats(estFinal) {
 
 onMounted(async () => {
   await store.chargerCandidats()
-  bureau.value = await store.chargerBureau(route.params.id)
+  await store.chargerBureauSynthese(route.params.id)
   if (bureau.value) {
-    // Check authorization
-    if (!auth.canAccessBureau(bureau.value.id)) {
-      bureau.value = null
-      loading.value = false
-      return
-    }
     remplirFormulaires()
   }
   loading.value = false

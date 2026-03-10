@@ -25,9 +25,7 @@ export const userManager = new UserManager(oidcConfig)
  * Déclenche la redirection vers la page de connexion Zitadel.
  * @param {string} redirectTo - Route de l'app à atteindre après login (ex: '/scrutateur')
  */
-export function login(redirectTo = '/scrutateur') {
-  console.log("oidc.login");
-  console.log(oidcConfig);
+export function login(redirectTo = '/') {
   return userManager.signinRedirect({ state: redirectTo })
 }
 

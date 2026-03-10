@@ -51,7 +51,7 @@ async function handleSSO() {
   chargement.value = true
   erreur.value     = null
   try {
-    const redirectTo = route.query.redirect || '/scrutateur'
+    const redirectTo = route.query.redirect || '/'
     await auth.loginWithSSO(redirectTo)
     // La page est redirigée vers Zitadel — la suite se passe dans CallbackView
   } catch (e) {
