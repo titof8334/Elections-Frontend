@@ -62,6 +62,8 @@ export const delegueAPI = {
   upsertParticipation:  (electionId, bureauId, heure, votants) => api.post(`/delegue/elections/${electionId}/bureaux/${bureauId}/participations`, { heure, votants }),
   upsertResultat:       (electionId, bureauId, data) => api.post(`/delegue/elections/${electionId}/bureaux/${bureauId}/resultats`, data),
   getBureaux:           (electionId) => api.get(`/delegue/elections/${electionId}/bureaux`),
+  majInscrits:          (electionId, id, data) => api.patch(`/delegue/elections/${electionId}/bureaux/${id}/inscrits`, data),
+  majVotants:           (electionId, id, data) => api.patch(`/delegue/elections/${electionId}/bureaux/${id}/votants`, data),
 }
 
 // ===== OWNER =====

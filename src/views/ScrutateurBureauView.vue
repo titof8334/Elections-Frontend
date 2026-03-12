@@ -22,41 +22,46 @@
 
         <!-- BLOC 1 : Informations bureau -->
         <section class="card section-bloc" style="margin-bottom: 1.5rem">
-          <h2 class="bloc-titre">Informations générales</h2>
-          <div class="grille-2" style="margin-bottom: 1rem">
-            <div class="form-group">
+          <h2 class="bloc-titre">Informations</h2>
+          <div class="grille-4" style="margin-bottom: 1rem">
+            <div v-if="etatBureau == 'ferme' || updateInscrits" class="form-group">
               <label class="form-label">Nombre d'inscrits</label>
               <input v-model.number="formBureau.inscrits" type="number" min="0" class="form-control" />
+              <button v-if="updateInscrits" @click="majInscrits">Mettre à jour</button>
+            </div>
+            <div v-else class="form-group" @click="updateInscrits = true">
+              <label class="form-label">Nombre d'inscrits</label>
+              <strong>{{ formBureau.inscrits }}</strong>
+            </div>
+            <div v-if="updateVotants" class="form-group">
+              <label class="form-label">Votants</label>
+              <input v-model.number="formBureau.votants" type="number" min="0" class="form-control" />
+              <button  v-if="updateVotants" @click="majVotants">Mettre à jour</button>
+            </div>
+            <div v-if="!updateVotants && etatBureau != 'ferme' && etatBureau != 'ouvert'" class="form-group" @click="updateVotants = true">
+              <label class="form-label">Votants</label>
+              <strong>{{ bureau.votants }}</strong>
+            </div>
+            <div v-if="etatBureau != 'ferme' && etatBureau != 'ouvert'" class="form-group">
+              <label class="form-label">Exprimés</label>
+              <strong>{{ bureau.exprimes }}</strong>
+            </div>
+            <div v-if="etatBureau == 'depouillement'" class="form-group">
+              <label class="form-label">{{ etatBureau == 'depouillement' ? 'Bulletins dépouillés' : ''}}</label>
+              <strong>{{ formBureau.bulletinsDepouilles }}</strong>
+            </div>
+            <div v-if="etatBureau == 'termine'" class="form-group">
+              <label class="form-label">Bulletins blancs et nuls</label>
+              <strong>{{ formBureau.bulletinsNuls + formBureau.bulletinsBlancs}}</strong>
             </div>
           </div>
-          <div class="grille-4">
-            <div class="form-group">
-              <label class="form-label">Bulletins dépouillés</label>
-              <input v-model.number="formBureau.bulletinsDepouilles" type="number" min="0" class="form-control" />
-            </div>
-            <div class="form-group">
-              <label class="form-label">Bulletins nuls</label>
-              <input v-model.number="formBureau.bulletinsNuls" type="number" min="0" class="form-control" />
-            </div>
-            <div class="form-group">
-              <label class="form-label">Bulletins blancs</label>
-              <input v-model.number="formBureau.bulletinsBlancs" type="number" min="0" class="form-control" />
-            </div>
-            <div class="form-group">
-              <label class="form-label">Dépouillement terminé</label>
-              <select v-model="formBureau.depouillementTermine" class="form-control">
-                <option :value="false">Non</option>
-                <option :value="true">Oui — résultat final</option>
-              </select>
-            </div>
-          </div>
-          <button class="btn btn--primaire" @click="sauvegarderBureau" :disabled="savingBureau">
+          <button v-if="etatBureau == 'ferme'" class="btn btn--primaire" @click="sauvegarderBureau" :disabled="savingBureau">
             {{ savingBureau ? 'Sauvegarde...' : '💾 Enregistrer les infos' }}
           </button>
         </section>
 
         <!-- BLOC 2 : Participation par heure -->
-        <section class="card section-bloc" style="margin-bottom: 1.5rem">
+        <section v-if="etatBureau == 'ouvert'" class="card section-bloc" style="margin-bottom: 1.5rem">
           <h2 class="bloc-titre">Taux de participation</h2>
           <p class="bloc-description">
             Indiquez le nombre de votants cumulé à chaque émargement horaire.
@@ -92,7 +97,7 @@
         </section>
 
         <!-- BLOC 3 : Résultats -->
-        <section class="card section-bloc" v-if="store.candidats.length > 0">
+        <section v-if="etatBureau == 'depouillement' || etatBureau == 'termine'" class="card section-bloc">
           <h2 class="bloc-titre">Résultats des candidats</h2>
           <p class="bloc-description">
             Saisissez les voix obtenues pour chaque candidat.
@@ -106,8 +111,13 @@
                 <strong>{{ candidat.prenom }} {{ candidat.nom }}</strong>
                 <span style="font-size: 0.8rem; color: var(--texte-doux)">{{ candidat.liste }}</span>
               </div>
-              <div class="candidat-saisie-pct" v-if="resultatForm[candidat.id] > 0 && totalVoixSaisies > 0">
-                {{ ((resultatForm[candidat.id] / totalVoixSaisies) * 100).toFixed(1) }}%
+              <div class="candidat-saisie-pct" v-if="resultatForm[candidat.id] > 0 && totalVoixExprimees > 0">
+                <div>
+                  Série : {{ ((resultatForm[candidat.id] / totalVoixExprimees) * 100).toFixed(1) }}%
+                </div>
+                <div>
+                  Cumulé : {{ resultatForm[candidat.id] + prevResult[candidat.id] }} / {{ (((resultatForm[candidat.id] + prevResult[candidat.id])/ (cumulExprime)) * 100).toFixed(1) }}%
+                </div>
               </div>
               <div class="form-group" style="margin-bottom: 0; width: 140px">
                 <label class="form-label" :for="`voix-${candidat.id}`">Voix</label>
@@ -121,24 +131,39 @@
                 />
               </div>
             </div>
+            <div class="candidat-saisie-row">
+              <div class="candidat-bande" :style="{ background: white }"></div>
+              <div class="candidat-saisie-info">
+                <strong>Bulletins blancs</strong>
+              </div>
+              <div>
+                <input v-model.number="blancs" type="number" min="0" class="form-control" :placeholder="bureau.bulletinsBlancs ?? 0"/>
+              </div>
+            </div>
+            <div class="candidat-saisie-row">
+              <div class="candidat-bande" :style="{ background: white }"></div>
+              <div class="candidat-saisie-info">
+                <strong>Bulletins nuls</strong>
+              </div>
+              <div>
+                <input v-model.number="nuls" type="number" min="0" class="form-control" :placeholder="bureau.bulletinsNuls ?? 0"/>
+              </div>
+            </div>
           </div>
 
           <div class="resultats-saisie-footer">
-            <div class="total-voix">Total saisi : <strong>{{ totalVoixSaisies }}</strong> voix</div>
+            <div class="total-voix">Saisi : <strong>{{ totalVoixSaisies }}</strong><br>Cumul saisi : <strong>{{ cumulSaisi }}</strong></div>
+            <div class="total-voix">Exprimé : <strong>{{ totalVoixExprimees }}</strong><br>Cumul Exprimé : <strong>{{ cumulExprime }}</strong> voix</div>
             <div style="display: flex; gap: 0.75rem">
-              <button class="btn btn--primaire" @click="sauvegarderResultats(false)" :disabled="savingResultats">
-                {{ savingResultats ? '...' : '💾 Enregistrer (partiel)' }}
+              <button class="btn btn--primaire" @click="sauvegarderResultats(true)" :disabled="savingResultats">
+                {{ savingResultats ? '...' : '💾 Enregistrer avec cumul' }}
               </button>
-              <button class="btn btn--succes" @click="sauvegarderResultats(true)" :disabled="savingResultats">
-                {{ savingResultats ? '...' : '✓ Enregistrer comme résultat final' }}
+              <button class="btn btn--primaire" @click="sauvegarderResultats(false)" :disabled="savingResultats">
+                {{ savingResultats ? '...' : '💾 Enregistrer sans cumul' }}
               </button>
             </div>
           </div>
         </section>
-
-        <div v-else class="alert alert--info">
-          Aucun candidat n'a été configuré. Contactez l'administrateur.
-        </div>
 
       </template>
 
@@ -162,7 +187,9 @@ const messageSucces = ref('')
 const messageErreur = ref('')
 const savingBureau = ref(false)
 const savingResultats = ref(false)
-
+const etatBureau = ref('ferme')
+const updateInscrits = ref(false)
+const updateVotants = ref(false)
 const heures = [
   { code: '09:00', label: '9h00' },
   { code: '11:00', label: '11h00' },
@@ -171,8 +198,10 @@ const heures = [
   { code: 'final', label: 'Clôture' },
 ]
 
+
 const formBureau = reactive({
   inscrits: 0,
+  votants: 0,
   bulletinsDepouilles: 0,
   bulletinsNuls: 0,
   bulletinsBlancs: 0,
@@ -181,9 +210,26 @@ const formBureau = reactive({
 
 const participationForm = reactive({})
 const resultatForm = reactive({})
+const blancs = ref(0)
+const nuls = ref(0)
+const prevResult = {}
+let prevBlancs = 0
+let prevNuls = 0
+let votantsAttendu = 0
 
+const totalVoixExprimees = computed(() =>
+    Object.values(resultatForm).reduce((s, v) => s + (Number(v) || 0), 0)
+)
 const totalVoixSaisies = computed(() =>
-  Object.values(resultatForm).reduce((s, v) => s + (Number(v) || 0), 0)
+    Object.values(resultatForm).reduce((s, v) => s + (Number(v) || 0), 0) + blancs.value + nuls.value
+)
+const cumulExprime = computed(() =>
+    Object.values(resultatForm).reduce((s, v) => s + (Number(v) || 0), 0) + Object.values(prevResult).reduce((s, v) => s + (Number(v) || 0), 0)
+)
+const cumulSaisi = computed(() =>
+    Object.values(resultatForm).reduce((s, v) => s + (Number(v) || 0), 0)
+    + Object.values(prevResult).reduce((s, v) => s + (Number(v) || 0), 0)
+    + blancs.value + nuls.value +prevNuls + prevBlancs
 )
 
 function getParticipation(heure) {
@@ -201,20 +247,32 @@ function taux(votants) {
 
 function remplirFormulaires() {
   if (!store.bureauCourant) return
+
+  if(bureau.value.depouillementTermine) etatBureau.value = 'termine'
+  else if(bureau.value.participations?.find(p => p.heure == 'final')) etatBureau.value = 'depouillement'
+  else if(bureau.value.inscrits) etatBureau.value="ouvert"
+  else etatBureau.value="ferme"
+
   formBureau.inscrits = bureau.value.inscrits
+  formBureau.votants = bureau.value.votants
   formBureau.bulletinsDepouilles = bureau.value.bulletinsDepouilles
   formBureau.bulletinsNuls = bureau.value.bulletinsNuls
   formBureau.bulletinsBlancs = bureau.value.bulletinsBlancs
   formBureau.depouillementTermine = bureau.value.depouillementTermine
-
+  blancs.value = 0
+  nuls.value = 0
+  prevBlancs  = bureau.value.bulletinsBlancs
+  prevNuls = bureau.value.bulletinsNuls
   // Pre-fill with existing participation
   for (const p of bureau.value.participations) {
     participationForm[p.heure] = p.votants
   }
+  votantsAttendu = participationForm['final'] ?? 0
 
   // Pre-fill with existing results
   for (const r of bureau.value.resultats) {
-    resultatForm[r.candidatId] = r.voix
+    prevResult[r.candidatId] = r.voix
+    resultatForm[r.candidatId] = 0
   }
   // Init empty for all candidats
   for (const c of store.candidats) {
@@ -242,29 +300,62 @@ async function sauvegarderBureau() {
   }
 }
 
+async function majVotants() {
+  await store.mettreAJourVotantsBureau(bureau.value.id, formBureau.votants)
+  bureau.value.votants = formBureau.votants
+  updateVotants.value = false
+}
+
+async function majInscrits() {
+  await store.mettreAJourInscritsBureau(bureau.value.id, formBureau.inscrits )
+  bureau.value.inscrits = formBureau.inscrits
+  updateInscrits.value = false
+}
+
 async function sauvegarderParticipation(heure) {
   const votants = participationForm[heure]
   if (votants === null || votants === undefined) return
   try {
     await store.sauvegarderParticipation(bureau.value.id, heure, votants)
     showMessage(`Participation de ${heure} enregistrée ✓`)
+    remplirFormulaires()
   } catch (e) {
     showMessage(e.response?.data?.reason || 'Erreur', 'erreur')
   }
 }
 
-async function sauvegarderResultats(estFinal) {
+async function sauvegarderResultats(estCumul) {
   savingResultats.value = true
+  const resultat = {
+    nuls: nuls.value,
+    blancs: blancs.value,
+    bulletinsDepouilles: totalVoixSaisies.value,
+    resultats: Object.entries(resultatForm).map(([candidatId, voix]) => ({ candidatId, voix })),
+    estFinal: false
+  }
   try {
-    const bulletinsDepouilles = formBureau.bulletinsDepouilles || bureau.value.bulletinsDepouilles
-    const promises = store.candidats
-      .filter(c => resultatForm[c.id] !== null && resultatForm[c.id] !== undefined)
-      .map(c =>
-        store.sauvegarderResultat(bureau.value.id, c.id, Number(resultatForm[c.id]) || 0, bulletinsDepouilles, estFinal)
-      )
-    await Promise.all(promises)
-    showMessage(estFinal ? 'Résultats finaux enregistrés ✓' : 'Résultats partiels enregistrés ✓')
+    let toConfirm = false
+    if (estCumul) {
+      if(cumulSaisi.value === votantsAttendu) {
+        toConfirm = true
+      }
+      resultat.nuls += prevNuls
+      resultat.blancs += prevBlancs
+      resultat.resultats = resultat.resultats.map(r1 => ({ candidatId: r1.candidatId, voix: r1.voix + prevResult[r1.candidatId] }))
+      resultat.bulletinsDepouilles = cumulSaisi.value
+    } else {
+      if(totalVoixSaisies.value === votantsAttendu) {
+        toConfirm = true
+      }
+    }
+    if(toConfirm) {
+      resultat.estFinal = confirm("Le nombre de votes saisis correspond au nombre de votants attendus. Puis-je clore le scrutin sur ce bureau (OK) ou dois-je continuer (Annuler) ?")
+    }
+    await store.sauvegarderResultats(resultat)
+    showMessage(resultat.estFinal ? 'Résultats finaux enregistrés ✓' : 'Résultats partiels enregistrés ✓')
+    remplirFormulaires()
   } catch (e) {
+    console.error(e)
     showMessage(e.response?.data?.reason || 'Erreur lors de la sauvegarde', 'erreur')
   } finally {
     savingResultats.value = false

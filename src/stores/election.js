@@ -109,15 +109,19 @@ export const useElectionStore = defineStore('election', {
     async sauvegarderParticipation(bureauId, heure, votants) {
       const res = await delegueAPI.upsertParticipation(this.electionCourante.id, bureauId, heure, votants)
       // Refresh bureau
-      await this.chargerBureau(bureauId)
+      this.bureauCourant = res.data
       return res.data
     },
+    async mettreAJourInscritsBureau(bureauId, inscrits) {
+      await delegueAPI.majInscrits(this.electionCourante.id, bureauId,inscrits)
+    },
+    async mettreAJourVotantsBureau(bureauId, votants) {
+      await delegueAPI.majVotants(this.electionCourante.id, bureauId,votants)
+    },
 
-    async sauvegarderResultat(bureauId, candidatId, voix, bulletinsDepouilles, estFinal = false) {
-      const res = await delegueAPI.upsertResultat(this.electionCourante.id, bureauId, {
-        candidatId, voix, bulletinsDepouilles, estFinal
-      })
-      await this.chargerBureau(bureauId)
+    async sauvegarderResultats(resultats) {
+      const res = await delegueAPI.upsertResultat(this.electionCourante.id, this.bureauCourant.id, resultats)
+      this.bureauCourant = res.data
       return res.data
     },
 
