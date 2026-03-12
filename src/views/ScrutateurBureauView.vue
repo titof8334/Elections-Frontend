@@ -131,29 +131,25 @@
                 />
               </div>
             </div>
-            <div class="candidat-saisie-row">
-              <div class="candidat-bande" :style="{ background: white }"></div>
-              <div class="candidat-saisie-info">
+            <div class="candidat-saisie-row candidat-saisie-row--inline">
+              <div class="candidat-bande"></div>
+              <div class="candidat-saisie-inline">
                 <strong>Bulletins blancs</strong>
-              </div>
-              <div>
                 <input v-model.number="blancs" type="number" min="0" class="form-control" :placeholder="bureau.bulletinsBlancs ?? 0"/>
               </div>
             </div>
-            <div class="candidat-saisie-row">
-              <div class="candidat-bande" :style="{ background: white }"></div>
-              <div class="candidat-saisie-info">
+            <div class="candidat-saisie-row candidat-saisie-row--inline">
+              <div class="candidat-bande"></div>
+              <div class="candidat-saisie-inline">
                 <strong>Bulletins nuls</strong>
-              </div>
-              <div>
                 <input v-model.number="nuls" type="number" min="0" class="form-control" :placeholder="bureau.bulletinsNuls ?? 0"/>
               </div>
             </div>
           </div>
 
           <div class="resultats-saisie-footer">
-            <div class="total-voix">Saisi : <strong>{{ totalVoixSaisies }}</strong><br>Cumul saisi : <strong>{{ cumulSaisi }}</strong></div>
-            <div class="total-voix">Exprimé : <strong>{{ totalVoixExprimees }}</strong><br>Cumul Exprimé : <strong>{{ cumulExprime }}</strong> voix</div>
+            <div class="total-voix">Saisi : <strong>{{ totalVoixSaisies }}</strong><br>Exprimé : <strong>{{ totalVoixExprimees }}</strong></div>
+            <div class="total-voix">Cumul saisi : <strong>{{ cumulSaisi }}</strong><br>Cumul exprimé : <strong>{{ cumulExprime }}</strong> voix</div>
             <div style="display: flex; gap: 0.75rem">
               <button class="btn btn--primaire" @click="sauvegarderResultats(true)" :disabled="savingResultats">
                 {{ savingResultats ? '...' : '💾 Enregistrer avec cumul' }}
@@ -445,6 +441,19 @@ onMounted(async () => {
 
 .candidat-bande { width: 6px; height: 40px; border-radius: 3px; }
 
+.candidat-saisie-row--inline {
+  grid-template-columns: 6px 1fr;
+}
+.candidat-saisie-inline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.candidat-saisie-inline .form-control {
+  width: 120px;
+  flex-shrink: 0;
+}
+
 .candidat-saisie-info {
   display: flex;
   flex-direction: column;
@@ -474,7 +483,71 @@ onMounted(async () => {
 @media (max-width: 900px) {
   .participation-grille { grid-template-columns: repeat(3, 1fr); }
 }
+
 @media (max-width: 600px) {
-  .participation-grille { grid-template-columns: repeat(2, 1fr); }
+  /* Header */
+  .saisie-header {
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+  }
+  .saisie-header .section-title {
+    font-size: 1.1rem;
+  }
+
+  /* Participation */
+  .participation-grille {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+  }
+  .participation-item {
+    padding: 0.75rem;
+  }
+  .participation-taux {
+    font-size: 1.3rem;
+  }
+
+  /* Résultats : bande fixe + tout le reste en colonne */
+  .candidat-saisie-row {
+    grid-template-columns: 6px 1fr;
+    gap: 0.4rem 0.75rem;
+    padding: 0.75rem;
+  }
+  .candidat-bande {
+    grid-row: 1 / -1;
+    height: auto;
+  }
+  .candidat-saisie-info,
+  .candidat-saisie-pct,
+  .candidat-saisie-row > .form-group {
+    grid-column: 2;
+    width: auto !important;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0;
+  }
+  .candidat-saisie-row > .form-group .form-label {
+    margin-bottom: 0;
+  }
+  .candidat-saisie-row > .form-group input {
+    width: 120px;
+    flex-shrink: 0;
+  }
+  .candidat-saisie-pct {
+    font-size: 0.85rem;
+    text-align: left;
+    min-width: unset;
+  }
+
+  /* Footer : empilé verticalement */
+  .resultats-saisie-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+  .resultats-saisie-footer > div:last-child {
+    flex-direction: column;
+  }
 }
 </style>
