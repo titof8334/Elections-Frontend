@@ -10,7 +10,7 @@
           <text x="20" y="24" text-anchor="middle" font-size="9" fill="#c9a84c" font-weight="bold">✓</text>
         </svg>
       </div>
-      <h1 class="login-titre">Espace Délégués</h1>
+      <h1 class="login-titre">Espace utilisateur</h1>
       <p class="login-sous-titre">Connectez-vous avec votre compte organisationnel</p>
 
       <div v-if="erreur" class="alert alert--erreur">{{ erreur }}</div>

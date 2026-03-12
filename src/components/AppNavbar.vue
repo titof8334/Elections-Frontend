@@ -28,13 +28,12 @@
             <option v-for="el in store.elections" :key="el.id" :value="el.id">{{ el.nom }}</option>
           </template>
         </select>
-        &nbsp;
         <template v-if="auth.user">
           <button v-if="!store.elections.find(e => e.id == selectedElectionId)?.isSubscriber" class="nav-link" @click="subscribe(selectedElectionId)">
-            Soutenir
+            <i class="fa-solid fa-star"></i> <span class="nav-label">Soutenir</span>
           </button>
           <button v-else class="nav-link nav-link--accent" @click="unsubscribe(selectedElectionId)">
-            Ne plus suivre
+            <i class="fa-solid fa-star-half-stroke ou fa-regular fa-star"></i> <span class="nav-label">Ne plus suivre</span>
           </button>
         </template>
       </router-link>
@@ -44,29 +43,30 @@
     <div class="navbar__brand"/>
     <div class="navbar__nav">
       <router-link to="/" class="nav-link" :class="{ active: $route.name === '/accueil' }">
-        Live
+        <i class="fa-solid fa-broadcast-tower"></i> <span class="nav-label">Live</span>
       </router-link>
 
       <template v-if="!auth.isAuthenticated">
-        <router-link to="/login" class="nav-link nav-link--accent">
-          Se connecter
+        <router-link to="/login" class="nav-link nav-link">
+          <i class="fa-solid fa-right-to-bracket"></i> <span class="nav-label">Se connecter</span>
         </router-link>
+
       </template>
       <template v-else>
         <router-link v-if="store.electionCourante?.isOwner || store.electionCourante?.isScrutateur" to="/scrutateur" class="nav-link" :class="{ active: $route.path.startsWith('/scrutateur') }">
-          Mes bureaux
+          <i class="fa-solid fa-building"></i> <span class="nav-label">Mes bureaux</span>
         </router-link>
         <router-link v-if="store.electionCourante?.isOwner" to="/gestion" class="nav-link" :class="{ active: $route.path.startsWith('/gestion') }">
-          Gestion
+          <i class="fa-solid fa-list-check"></i> <span class="nav-label">Gestion</span>
         </router-link>
         <router-link v-if="auth.isAdmin" to="/admin" class="nav-link" :class="{ active: $route.name === 'admin' }">
-          ⚙ Admin
+          <i class="fa-solid fa-gear"></i> <span class="nav-label">Admin</span>
         </router-link>
         <router-link to="/preferences" class="nav-link" :class="{ active: $route.name === 'preferences' }">
-          Mon profil
+          <i class="fa-solid fa-user"></i> <span class="nav-label">Mon profil</span>
         </router-link>
         <button class="nav-link nav-link--accent" @click="logout">
-          Déconnexion
+          <i class="fa-solid fa-right-from-bracket"></i> <span class="nav-label">Déconnexion</span>
         </button>
       </template>
     </div>

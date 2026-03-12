@@ -11,6 +11,9 @@
           <button class="btn btn--primaire" @click="sauvegarderElection">
             Mettre à jour
           </button>
+          <button class="btn btn--danger" @click="showReset">
+            ⚠ Reset
+          </button>
         </div>
         <div class="form-group">
           <label class="form-label">Délégués</label>
@@ -33,9 +36,6 @@
         </button>
         <button class="admin-tab" :class="{ 'admin-tab--active': activeTab === 'utilisateurs' }" @click="activateTab('utilisateurs')">
           Utilisateurs
-        </button>
-        <button class="admin-tab" :class="{ 'admin-tab--active': activeTab === 'danger' }" @click="activateTab('danger')">
-          ⚠ Reset
         </button>
       </div>
       <div v-else>
@@ -102,22 +102,19 @@
             <thead>
               <tr>
                 <th>Ordre</th>
-                <th>Couleur</th>
                 <th>Nom</th>
                 <th>Liste</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="c in store.candidats" :key="c.id" @click="ouvrirModalCandidat(c)">
+              <tr v-for="c in store.candidats" :key="c.id" @click="ouvrirModalCandidat(c)"
+                  :style="{ borderLeft: `20px solid ${c.couleur}` }">
                 <td>{{ c.ordre }}</td>
-                <td>
-                  <div :style="{ width: '24px', height: '24px', borderRadius: '50%', background: c.couleur }"></div>
-                </td>
                 <td><strong>{{ c.prenom }} {{ c.nom }}</strong></td>
                 <td>{{ c.liste }}</td>
               </tr>
               <tr v-if="store.candidats.length === 0">
-                <td colspan="4" style="text-align: center; color: var(--texte-doux)">
+                <td colspan="3" style="text-align: center; color: var(--texte-doux)">
                   Aucun candidat configuré
                 </td>
               </tr>
@@ -166,24 +163,25 @@
         </div>
       </section>
 
-      <!-- ===== DANGER ZONE ===== -->
-      <section v-if="activeTab === 'danger'" class="admin-panel">
-        <h2 class="section-title" style="font-size: 1.4rem; color: var(--rouge-rep)">⚠ Zone dangereuse</h2>
-        <p class="section-subtitle">Ces actions sont irréversibles.</p>
-        <div class="card" style="border: 2px solid var(--rouge-rep)">
-          <h3 style="margin-bottom: 0.5rem">Réinitialiser le dépouillement</h3>
-          <p style="font-size: 0.9rem; color: var(--texte-doux); margin-bottom: 1rem">
-            Supprime tous les résultats, participations et remet les bureaux à zéro. Les bureaux, candidats et utilisateurs sont conservés.
-          </p>
+    <!-- ===== MODAL RESET ===== -->
+    <div class="modal-overlay" v-if="showModalReset" @click.self="showModalReset = false">
+      <div class="modal-box">
+        <h2 class="modal-titre" style="color: var(--rouge-rep)">⚠ Zone de danger</h2>
+        <p style="margin-bottom: 0.75rem">
+          Cette action va effacer <strong>toutes les participations et tous les résultats</strong>
+          de l'élection <strong>{{ store.electionCourante?.nom }}</strong>.
+        </p>
+        <p style="margin-bottom: 1.5rem; color: var(--texte-doux); font-size: 0.9rem">
+          Les bureaux, candidats et utilisateurs ne seront pas supprimés.
+          Cette action est <strong>irréversible</strong>.
+        </p>
+        <div style="display: flex; gap: 0.75rem; justify-content: flex-end">
+          <button class="btn btn--fantome" @click="showModalReset = false">Annuler</button>
           <button class="btn btn--danger" @click="resetElection">
-            ⚠ Réinitialiser toutes les données de vote
+            Confirmer la réinitialisation
           </button>
         </div>
-      </section>
-
-      <div class="alert alert--succes" v-if="messageSucces">{{ messageSucces }}</div>
-      <div class="alert alert--erreur" v-if="messageErreur">{{ messageErreur }}</div>
-
+      </div>
     </div>
 
     <!-- ===== MODAL BUREAU ===== -->
@@ -373,7 +371,7 @@
         </div>
       </div>
     </div>
-
+    </div>
   </main>
 </template>
 
@@ -393,6 +391,7 @@ const users = ref([])
 const showModalBureau = ref(false)
 const showModalCandidat = ref(false)
 const showModalUser = ref(false)
+const showModalReset = ref(false)
 
 const formElection = reactive({ id: null, nom: '' })
 const formBureau = reactive({ id: null, numero: 1, nom: '', adresse: '', inscrits: 0 })
@@ -409,8 +408,6 @@ async function activateTab(id) {
       break;
     case "utilisateurs":
       users.value = await store.chargerUsers()
-      break;
-    case "danger":
       break;
   }
   activeTab.value = id
@@ -654,12 +651,15 @@ async function supprimerUser(id) {
 }
 
 // ===== RESET =====
+function showReset() {
+  showModalReset.value = true
+}
+
 async function resetElection() {
-  if (!confirm('⚠ ATTENTION : Êtes-vous sûr de vouloir effacer TOUTES les données de vote ? Cette action est irréversible.')) return
-  if (!confirm('Dernière confirmation : effacer tous les résultats et participations ?')) return
   try {
     await ownerAPI.resetElection(store.electionCourante.id)
     await store.chargerBureaux()
+    showModalReset.value = false
     showMsg('Données réinitialisées ✓')
   } catch (e) {
     showMsg('Erreur lors de la réinitialisation', 'erreur')

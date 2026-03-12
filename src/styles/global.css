@@ -1,3 +1,5 @@
+@import '@fortawesome/fontawesome-free/css/all.css';
+
 :root {
   --bleu-nuit: #0a1628;
   --bleu-rep: #003189;
@@ -374,6 +376,40 @@ input, select, textarea {
 
 @media (max-width: 768px) {
   .grille-2, .grille-3, .grille-4 { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 600px) {
+  .nav-label { display: none; }
+
+  .navbar {
+    padding: 0 0.75rem;
+    height: 56px;
+  }
+
+  .navbar__logo {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+  }
+
+  .navbar__brand {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .navbar__title {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .nav-select {
+    flex: 1;
+    min-width: 0;
+    max-width: none;
+  }
 }
 
 /* ===== SEPARATEUR ===== */

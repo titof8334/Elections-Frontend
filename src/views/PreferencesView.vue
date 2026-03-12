@@ -82,7 +82,7 @@
 
           <div style="display: flex; justify-content: flex-end; margin-top: 1.5rem">
             <button type="button" class="btn btn--primaire" @click="sauvegarderElection">
-              Mettre à jour mes choix pour cette élection
+              Mettre à jour mes choix
             </button>
           </div>
 
