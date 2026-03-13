@@ -16,23 +16,17 @@
             Aucun bureau ne vous est assigné. Contactez l'administrateur.
           </div>
           <div v-else class="grille-2">
-            <div
-                v-for="bureau in store.bureaux"
-                :key="bureau.id"
-                class="card bureau-scrutateur-card"
-            >
+            <template v-for="bureau in store.bureaux" :key="bureau.id">
+            <router-link :to="`/scrutateur/bureau/${bureau.id}`" class="card bureau-scrutateur-card">
               <div class="bureau-scrutateur-header">
                 <div>
                   <span class="bureau-numero-label">Bureau {{ bureau.numero }}</span>
                   <h3 class="bureau-nom">{{ bureau.nom }}</h3>
                   <p class="bureau-adresse">{{ bureau.adresse }}</p>
                 </div>
-                <span
-                    class="badge"
-                    :class="bureau.depouillementTermine ? 'badge--vert' : 'badge--gris'"
-                >
-                {{ bureau.depouillementTermine ? '✓ Terminé' : 'En cours' }}
-              </span>
+                <span class="badge" :class="store.etatBureauDisplay(bureau).color" >
+                  {{ store.etatBureauDisplay(bureau).text }}
+                </span>
               </div>
 
               <hr class="sep" />
@@ -55,23 +49,8 @@
                   <span class="info-val">{{ bureau.bulletinsBlancs }}</span>
                 </div>
               </div>
-
-              <div style="display: flex; gap: 0.75rem; margin-top: 1rem">
-                <router-link
-                    :to="`/scrutateur/bureau/${bureau.id}`"
-                    class="btn btn--primaire"
-                    style="flex: 1; justify-content: center"
-                >
-                  ✏ Saisir les données
-                </router-link>
-                <router-link
-                    :to="`/bureau/${bureau.id}`"
-                    class="btn btn--fantome btn--sm"
-                >
-                  Voir
-                </router-link>
-              </div>
-            </div>
+            </router-link>
+            </template>
           </div>
         </template>
         <template v-else>

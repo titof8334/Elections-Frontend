@@ -87,6 +87,60 @@
           </div>
         </section>
 
+        <!-- Projection -->
+        <section class="section-resultats section-projection" v-if="store.synthese.totalDepouilles">
+          <h2 class="section-title">Projection du résultat final</h2>
+          <p class="section-subtitle">
+            Simulation basée sur la répartition actuelle des suffrages —
+            {{ (store.synthese.totalDepouilles / store.synthese.totalVotants * 100).toFixed(1) }}% des bulletins dépouillés
+          </p>
+
+          <div class="card projection-info">
+            <div class="projection-progress-wrap">
+              <div class="projection-progress-label">
+                Avancement du dépouillement : <strong>{{ (store.synthese.totalDepouilles / store.synthese.totalVotants * 100).toFixed(1) }}%</strong>
+                ({{ store.bureauxTermines }}/{{ store.totalBureaux }} bureaux)
+              </div>
+              <div class="progress-bar-wrap" style="height: 10px; margin-top: 0.5rem">
+                <div class="progress-bar-fill" :style="{ width: `${(store.synthese.totalDepouilles / store.synthese.totalVotants * 100)}%`, background: 'var(--bleu-rep)' }"></div>
+              </div>
+            </div>
+            <p class="projection-note">
+              Hypothèse : la répartition observée sur les {{ store.synthese.totalDepouilles.toLocaleString('fr-FR') }} bulletins dépouillés
+              s'applique aux {{ (store.synthese.totalVotants - store.synthese.totalDepouilles).toLocaleString('fr-FR') }} bulletins restants
+              (participation finale déclarée par bureau).
+            </p>
+          </div>
+
+          <div class="resultats-liste" style="margin-top: 1rem">
+            <div
+                v-for="(r, i) in store.resultatsGlobaux"
+                :key="r.candidatId"
+                class="candidat-row"
+                :class="{ 'candidat-row--premier': i === 0 }"
+            >
+              <div class="candidat-rang">{{ i + 1 }}</div>
+              <div class="candidat-couleur" :style="{ background: r.couleur }"></div>
+              <div class="candidat-identite">
+                <div class="candidat-nom">{{ r.candidatPrenom }} {{ r.candidatNom }}</div>
+                <div class="candidat-liste">{{ r.candidatListe }}</div>
+              </div>
+              <div class="candidat-stats">
+                <div class="candidat-voix">{{ r.totalVoixProjete.toLocaleString('fr-FR') }} voix</div>
+                <div class="candidat-pct">{{ r.pourcentageProjete.toFixed(2) }}%</div>
+              </div>
+              <div class="candidat-barre-wrap">
+                <div class="progress-bar-wrap">
+                  <div
+                      class="progress-bar-fill"
+                      :style="{ width: `${r.pourcentageProjete}%`, background: r.couleur }"
+                  ></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <!-- Participation par heure -->
         <section class="section-participation" v-if="participationsParHeure.length > 0">
           <h2 class="section-title">Taux de participation</h2>
@@ -141,12 +195,10 @@
             >
               <div class="bureau-header">
                 <span class="bureau-numero">Bureau {{ bureau.numero }}</span>
-                <span
-                    class="badge"
-                    :class="bureau.depouillementTermine ? 'badge--vert' : 'badge--gris'"
-                >
-                  {{ bureau.depouillementTermine ? '✓ Terminé' : 'En cours' }}
+                <span class="badge" :class="store.etatBureauDisplay(bureau).color" >
+                  {{ store.etatBureauDisplay(bureau).text }}
                 </span>
+
               </div>
               <div class="bureau-nom">{{ bureau.nom }}</div>
               <div class="bureau-stats-mini">
@@ -180,6 +232,10 @@ let intervalId = null
 const participationsParHeure = computed(() =>
     (store.synthese?.participationsParHeure || []).filter(p => p.totalVotants > 0)
 )
+
+const projection = computed(() => {
+  return true
+  })
 
 function couleurTaux(taux) {
   if (taux >= 70) return '#1a7a4a'
@@ -320,8 +376,54 @@ watch(() => store.electionCourante, async () => {
   color: var(--texte-doux);
 }
 
+.section-projection .candidat-row--projection {
+  background: #f8f9fc;
+  border-style: dashed;
+}
+.section-projection .candidat-row--projection.candidat-row--premier {
+  background: linear-gradient(135deg, #fffdf0, #f8f9fc);
+}
+
+.projection-info {
+  padding: 1rem 1.25rem;
+  background: #f0f4ff;
+  border: 1px solid #c5d3f0;
+  border-radius: var(--rayon-lg);
+  margin-bottom: 0.25rem;
+}
+.projection-progress-wrap { margin-bottom: 0.75rem; }
+.projection-progress-label { font-size: 0.9rem; color: var(--texte-sombre); }
+.projection-note {
+  font-size: 0.82rem;
+  color: var(--texte-doux);
+  font-style: italic;
+  margin: 0;
+}
+
+.projection-total {
+  margin-top: 0.75rem;
+  text-align: right;
+  font-size: 0.9rem;
+  color: var(--texte-doux);
+}
+
 @media (max-width: 768px) {
   .candidat-row { grid-template-columns: 2rem 6px 1fr auto; }
   .candidat-barre-wrap { display: none; }
+
+  /* Participation : masquer la colonne barre de progression */
+  .section-participation .tableau th:last-child,
+  .section-participation .tableau td:last-child { display: none; }
+
+  /* Rendre le tableau scrollable si ça reste serré */
+  .section-participation .card { overflow-x: auto; }
+
+  /* Colonnes restantes : réduire le padding et la taille */
+  .section-participation .tableau th,
+  .section-participation .tableau td {
+    padding: 0.5rem 0.6rem;
+    font-size: 0.85rem;
+    white-space: nowrap;
+  }
 }
 </style>

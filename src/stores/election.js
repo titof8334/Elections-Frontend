@@ -45,7 +45,30 @@ export const useElectionStore = defineStore('election', {
         this.error = 'Erreur lors du chargement de la synthèse'
       }
     },
-
+    etatBureau(bureau) {
+      if(bureau.depouillementTermine) return 'termine'
+      else if(bureau.votants) return 'depouillement'
+      else if(bureau.inscrits) return "ouvert"
+      else return "ferme"
+    },
+    etatDisplay(etat) {
+      switch (etat) {
+        case 'ferme' :
+          return { text: "Fermé", color: "badge--gris" }
+        case 'ouvert' :
+          return { text: "Ouvert - Votes en cours", color: "badge--or" }
+        case 'depouillement' :
+          return { text: "Clos - Dépouillement en cours", color: "badge--rouge" }
+        default :
+          return { text: "✓ Terminé", color: "badge--vert" }
+      }
+    },
+    etatBureauDisplay(bureau) {
+      if(bureau.depouillementTermine) return { text: "✓ Terminé", color: "badge--vert" }
+      else if(bureau.votants) return { text: "Clos - Dépouillement en cours", color: "badge--rouge" }
+      else if(bureau.inscrits) return { text: "Ouvert - Votes en cours", color: "badge--or" }
+      else return { text: "Fermé", color: "badge--gris" }
+    },
     async chargerElections(all = true) {
       try {
         const res = all ? await publicAPI.getElections() : await authUserAPI.joinedElections()
@@ -77,7 +100,23 @@ export const useElectionStore = defineStore('election', {
         this.error = 'Erreur lors du chargement des élections'
       }
     },
-
+    async resetElection() {
+      this.loading = true
+      if (!this.electionCourante) {
+        this.error = "Pas d'élection courante"
+        this.loading = false
+        return null
+      }
+      try {
+        const res = await ownerAPI.resetElection(this.electionCourante.id)
+        this.electionCourante = res.data
+      } catch (err) {
+        this.error = 'Problème lors de la réinitialisation'
+        return null
+      } finally {
+        this.loading = false
+      }
+    },
     async chargerElection(id) {
       this.loading = true
       if(!id) {
@@ -116,7 +155,8 @@ export const useElectionStore = defineStore('election', {
       await delegueAPI.majInscrits(this.electionCourante.id, bureauId,inscrits)
     },
     async mettreAJourVotantsBureau(bureauId, votants) {
-      await delegueAPI.majVotants(this.electionCourante.id, bureauId,votants)
+      const res = await delegueAPI.majVotants(this.electionCourante.id, bureauId, votants)
+      return res.data
     },
 
     async sauvegarderResultats(resultats) {

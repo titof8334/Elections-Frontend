@@ -27,7 +27,7 @@
       <div class="alert alert--erreur" v-if="messageErreur">{{ messageErreur }}</div>
 
       <!-- Onglets -->
-      <div v-if="store.electionCourante" class="admin-tabs">
+      <div class="admin-tabs">
         <button class="admin-tab" :class="{ 'admin-tab--active': activeTab === 'candidats' }" @click="activateTab('candidats')">
           Candidats
         </button>
@@ -37,9 +37,6 @@
         <button class="admin-tab" :class="{ 'admin-tab--active': activeTab === 'utilisateurs' }" @click="activateTab('utilisateurs')">
           Utilisateurs
         </button>
-      </div>
-      <div v-else>
-        <h1>Sélectionner une élection dans le menu principal</h1>
       </div>
 
 
@@ -413,19 +410,19 @@ async function activateTab(id) {
   activeTab.value = id
 }
 function assesseurs(bureau) {
-  return bureau.users.filter(u => u.role === 'assesseur')
+  return bureau.users?.filter(u => u.role === 'assesseur') ?? []
 }
 function delegue(bureau) {
-  return bureau.users.filter(u => u.role === 'delegue')
+  return bureau.users?.filter(u => u.role === 'delegue') ?? []
 }
 function delegues() {
-  return users.value.filter(u => u.role === 'delegue')
+  return users.value?.filter(u => u.role === 'delegue') ?? []
 }
 function dispsDelegue(bureau) {
-  return bureau.users.filter(u => u.dispDelegue)
+  return bureau.users?.filter(u => u.dispDelegue) ?? []
 }
 function dispsAssesseur(bureau) {
-  return bureau.users.filter(u => u.dispAssesseur)
+  return bureau.users?.filter(u => u.dispAssesseur)?? []
 }
 
 function showMsg(msg, type = 'succes') {
@@ -657,8 +654,7 @@ function showReset() {
 
 async function resetElection() {
   try {
-    await ownerAPI.resetElection(store.electionCourante.id)
-    await store.chargerBureaux()
+    await store.resetElection()
     showModalReset.value = false
     showMsg('Données réinitialisées ✓')
   } catch (e) {

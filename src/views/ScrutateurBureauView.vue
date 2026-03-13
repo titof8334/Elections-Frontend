@@ -12,8 +12,8 @@
             <h1 class="section-title">Bureau {{ bureau.numero }} — {{ bureau.nom }}</h1>
             <p class="section-subtitle">{{ bureau.adresse }}</p>
           </div>
-          <span class="badge" :class="bureau.depouillementTermine ? 'badge--vert' : 'badge--or'">
-            {{ bureau.depouillementTermine ? '✓ Terminé' : 'En cours' }}
+          <span class="badge" :class="store.etatDisplay(etatBureau).color">
+            {{ store.etatDisplay(etatBureau).text }}
           </span>
         </div>
 
@@ -96,8 +96,31 @@
           </div>
         </section>
 
-        <!-- BLOC 3 : Résultats -->
-        <section v-if="etatBureau == 'depouillement' || etatBureau == 'termine'" class="card section-bloc">
+        <!-- BLOC 3 : Résultats — vue lecture (terminé) -->
+        <section v-if="etatBureau == 'termine'" class="card section-bloc">
+          <h2 class="bloc-titre">Résultats des candidats</h2>
+          <p class="bloc-description">
+            Dépouillement terminé — {{ bureau.bulletinsDepouilles }} bulletins dépouillés
+          </p>
+          <div class="resultats-saisie">
+            <div v-for="candidat in store.candidats" :key="candidat.id" class="candidat-saisie-row">
+              <div class="candidat-bande" :style="{ background: candidat.couleur }"></div>
+              <div class="candidat-saisie-info">
+                <strong>{{ candidat.prenom }} {{ candidat.nom }}</strong>
+                <span style="font-size: 0.8rem; color: var(--texte-doux)">{{ candidat.liste }}</span>
+              </div>
+              <div class="candidat-saisie-pct">
+                <strong>{{ prevResult[candidat.id] ?? 0 }}</strong> voix
+                <span v-if="cumulExprime > 0" style="color: var(--bleu-rep)">
+                  — {{ ((prevResult[candidat.id] ?? 0) / cumulExprime * 100).toFixed(2) }}%
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- BLOC 3 : Résultats — saisie (dépouillement en cours) -->
+        <section v-if="etatBureau == 'depouillement'" class="card section-bloc">
           <h2 class="bloc-titre">Résultats des candidats</h2>
           <p class="bloc-description">
             Saisissez les voix obtenues pour chaque candidat.
@@ -243,11 +266,7 @@ function taux(votants) {
 
 function remplirFormulaires() {
   if (!store.bureauCourant) return
-
-  if(bureau.value.depouillementTermine) etatBureau.value = 'termine'
-  else if(bureau.value.participations?.find(p => p.heure == 'final')) etatBureau.value = 'depouillement'
-  else if(bureau.value.inscrits) etatBureau.value="ouvert"
-  else etatBureau.value="ferme"
+  etatBureau.value = store.etatBureau(bureau.value)
 
   formBureau.inscrits = bureau.value.inscrits
   formBureau.votants = bureau.value.votants
@@ -260,13 +279,13 @@ function remplirFormulaires() {
   prevBlancs  = bureau.value.bulletinsBlancs
   prevNuls = bureau.value.bulletinsNuls
   // Pre-fill with existing participation
-  for (const p of bureau.value.participations) {
+  for (const p of bureau.value.participations || []) {
     participationForm[p.heure] = p.votants
   }
   votantsAttendu = participationForm['final'] ?? 0
 
   // Pre-fill with existing results
-  for (const r of bureau.value.resultats) {
+  for (const r of bureau.value.resultats || []) {
     prevResult[r.candidatId] = r.voix
     resultatForm[r.candidatId] = 0
   }
@@ -297,7 +316,8 @@ async function sauvegarderBureau() {
 }
 
 async function majVotants() {
-  await store.mettreAJourVotantsBureau(bureau.value.id, formBureau.votants)
+  bureau.value.depouillementTermine = await store.mettreAJourVotantsBureau(bureau.value.id, formBureau.votants)
+  etatBureau.value = bureau.value.depouillementTermine ? "termine" : "depouillement"
   bureau.value.votants = formBureau.votants
   updateVotants.value = false
 }
