@@ -29,16 +29,17 @@
           </template>
         </select>
         <template v-if="auth.user">
-          <button v-if="!store.elections.find(e => e.id == selectedElectionId)?.isSubscriber" class="nav-link" @click="subscribe(selectedElectionId)">
+          <button v-if="!store.elections.find(e => e.id === selectedElectionId)?.isSubscriber" class="nav-link" @click="subscribe(selectedElectionId)">
             <i class="fa-solid fa-star"></i> <span class="nav-label">Soutenir</span>
           </button>
           <button v-else class="nav-link nav-link--accent" @click="unsubscribe(selectedElectionId)">
-            <i class="fa-solid fa-star-half-stroke ou fa-regular fa-star"></i> <span class="nav-label">Ne plus suivre</span>
+            <i class="fa-solid fa-star-half-stroke"></i> <span class="nav-label">Ne plus suivre</span>
           </button>
         </template>
       </router-link>
     </div>
   </nav>
+  <div v-if="erreurNavbar" class="alert alert--erreur" style="margin: 0; border-radius: 0; text-align: center; font-size: 0.875rem">{{ erreurNavbar }}</div>
   <nav class="navbar">
     <div class="navbar__brand"/>
     <div class="navbar__nav">
@@ -84,24 +85,35 @@ const auth = useAuthStore()
 const router = useRouter()
 const store = useElectionStore()
 const selectedElectionId = ref('')
+const erreurNavbar = ref('')
+
+function showMessage(msg) {
+  erreurNavbar.value = msg
+  setTimeout(() => { erreurNavbar.value = '' }, 3500)
+}
 
 async function selectElection(id) {
   await store.chargerElection(id)
 }
 
 async function subscribe(electionId) {
-  await authUserAPI.joinElection(electionId)
-  await store.chargerElections(true)
+  try {
+    await authUserAPI.joinElection(electionId)
+    await store.chargerElections(true)
+  } catch (e) {
+    showMessage(e.response?.data?.reason || 'Erreur à la souscription')
+  }
 }
 async function unsubscribe(electionId) {
-  await authUserAPI.leaveElection(electionId)
-  await store.chargerElections(true)
-
+  try {
+    await authUserAPI.leaveElection(electionId)
+    await store.chargerElections(true)
+  } catch (e) {
+    showMessage(e.response?.data?.reason || 'Erreur à la désinscription')
+  }
 }
 function logout() {
   auth.logout()
-  store.clearStore()
-  router.push('/')
 }
 
 onMounted(async () => {

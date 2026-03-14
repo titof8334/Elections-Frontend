@@ -233,10 +233,6 @@ const participationsParHeure = computed(() =>
     (store.synthese?.participationsParHeure || []).filter(p => p.totalVotants > 0)
 )
 
-const projection = computed(() => {
-  return true
-  })
-
 function couleurTaux(taux) {
   if (taux >= 70) return '#1a7a4a'
   if (taux >= 50) return '#a07a10'

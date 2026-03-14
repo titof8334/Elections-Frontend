@@ -358,11 +358,7 @@
           <button class="btn btn--primaire" @click="sauvegarderUser">
             {{ formUser.id ? 'Modifier' : 'Créer' }}
           </button>
-          <button v-if="formUser.id"
-              class="btn btn--danger btn--sm"
-              @click="supprimerUser(formUser.id)"
-              :disabled="formUser.email === 'christ.arnal@laposte.net'"
-          >
+          <button v-if="formUser.id" class="btn btn--danger btn--sm" @click="supprimerUser(formUser.id)">
             Supprimer
           </button>
         </div>
@@ -412,9 +408,6 @@ async function activateTab(id) {
 function assesseurs(bureau) {
   return bureau.users?.filter(u => u.role === 'assesseur') ?? []
 }
-function delegue(bureau) {
-  return bureau.users?.filter(u => u.role === 'delegue') ?? []
-}
 function delegues() {
   return users.value?.filter(u => u.role === 'delegue') ?? []
 }
@@ -455,6 +448,8 @@ function ouvrirModalBureau(bureau = null) {
   showModalBureau.value = true
 }
 async function sauvegarderBureau() {
+  if (!formBureau.nom?.trim()) { showMsg('Le nom du bureau est obligatoire', 'erreur'); return }
+  if (!formBureau.numero || formBureau.numero < 1) { showMsg('Le numéro du bureau doit être au moins 1', 'erreur'); return }
   try {
     if (formBureau.id) {
       await store.modifierBureau(formBureau.id, { numero: formBureau.numero, nom: formBureau.nom, adresse: formBureau.adresse, inscrits: formBureau.inscrits })
@@ -492,10 +487,9 @@ async function toggleAssignationAssesseur(userId, checked) {
     } else {
       await ownerAPI.removeAssesseur(store.electionCourante.id, store.bureauCourant.id, userId)
     }
-    await store.chargerBureaux()
+    await store.chargerBureauxWithUsers()
     store.bureauCourant = store.bureaux.find(b => b.id === store.bureauCourant.id)
     showMsg('Assignation mise à jour ✓')
-    await store.chargerUsers(false)
   } catch (e) {
     showMsg('Erreur', 'erreur')
   }
@@ -508,9 +502,8 @@ async function toggleAssignationDelegue(userId, checked) {
     } else {
       await ownerAPI.removeDelegue(store.electionCourante.id, store.bureauCourant.id, userId)
     }
-    await store.chargerBureaux()
+    await store.chargerBureauxWithUsers()
     store.bureauCourant = store.bureaux.find(b => b.id === store.bureauCourant.id)
-    await store.chargerUsers(false)
     showMsg('Assignation mise à jour ✓')
   } catch (e) {
     showMsg('Erreur', 'erreur')
@@ -527,6 +520,7 @@ function ouvrirModalCandidat(candidat = null) {
   showModalCandidat.value = true
 }
 async function sauvegarderCandidat() {
+  if (!formCandidat.nom?.trim()) { showMsg('Le nom du candidat est obligatoire', 'erreur'); return }
   try {
     if (formCandidat.id) {
       await store.modifierCandidat(formCandidat.id, { ...formCandidat })
@@ -586,6 +580,10 @@ function ouvrirModalUser(user = null) {
   showModalUser.value = true
 }
 async function sauvegarderUser() {
+  if (!formUser.nom?.trim()) { showMsg('Le nom est obligatoire', 'erreur'); return }
+  if (!formUser.prenom?.trim()) { showMsg('Le prénom est obligatoire', 'erreur'); return }
+  if (!formUser.email?.trim()) { showMsg('L\'email est obligatoire', 'erreur'); return }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formUser.email)) { showMsg('L\'email n\'est pas valide', 'erreur'); return }
   let bureaux = [];
   switch(formUser.role) {
     case 'delegue':
@@ -639,9 +637,9 @@ async function sauvegarderUser() {
 async function supprimerUser(id) {
   if (!confirm('Supprimer cet utilisateur ?')) return
   try {
-    await adminAPI.deleteUser(id)
+    await ownerAPI.blacklistUser(store.electionCourante.id, id)
     users.value = await store.chargerUsers(auth.isAdmin)
-    showMsg('Utilisateur supprimé ✓')
+    showMsg('Utilisateur retiré ✓')
   } catch (e) {
     showMsg('Erreur', 'erreur')
   }

@@ -40,7 +40,7 @@
         </div>
 
         <!-- Participation par heure -->
-        <section style="margin-bottom: 2rem" v-if="store.bureauCourant.participations.length > 0">
+        <section style="margin-bottom: 2rem" v-if="store.bureauCourant.participations?.length > 0">
           <h2 class="section-title" style="font-size: 1.4rem">Participation</h2>
           <p class="section-subtitle">Taux de participation aux différentes heures</p>
           <div class="card">
@@ -127,8 +127,8 @@ const loading = ref(true)
 
 const resultatsAvecCandidats = computed(() => {
   if (!store.bureauCourant || !store.candidats.length) return []
-  const totalVoix = store.bureauCourant.resultats.reduce((s, r) => s + r.voix, 0)
-  return store.bureauCourant.resultats.map(r => {
+  const totalVoix = (store.bureauCourant.resultats || []).reduce((s, r) => s + r.voix, 0)
+  return (store.bureauCourant.resultats || []).map(r => {
     const candidat = store.candidats.find(c => c.id === r.candidatId)
     const pct = totalVoix > 0 ? (r.voix / totalVoix) * 100 : 0
     return {

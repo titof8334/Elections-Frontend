@@ -64,25 +64,25 @@ export const useElectionStore = defineStore('election', {
       }
     },
     etatBureauDisplay(bureau) {
-      if(bureau.depouillementTermine) return { text: "✓ Terminé", color: "badge--vert" }
-      else if(bureau.votants) return { text: "Clos - Dépouillement en cours", color: "badge--rouge" }
-      else if(bureau.inscrits) return { text: "Ouvert - Votes en cours", color: "badge--or" }
-      else return { text: "Fermé", color: "badge--gris" }
+      return this.etatDisplay(this.etatBureau(bureau))
+    },
+    selectionnerElectionParDefaut() {
+      if (this.elections.length > 0) {
+        if (!this.electionCourante || !this.elections.some(e => e.id === this.electionCourante.id)) {
+          this.electionCourante = this.elections.find(e => e.isOwner)
+              || this.elections.find(e => e.isScrutateur)
+              || this.elections.find(e => e.isSubscriber)
+              || this.elections[0]
+        }
+      } else {
+        this.electionCourante = undefined
+      }
     },
     async chargerElections(all = true) {
       try {
         const res = all ? await publicAPI.getElections() : await authUserAPI.joinedElections()
         this.elections = res.data
-        if (this.elections.length > 0) {
-          if (!this.electionCourante || !this.elections.some(e => e.id == this.electionCourante.id)) {
-            this.electionCourante = this.elections.find(e => e.isOwner)
-                || this.elections.find(e => e.isScrutateur)
-                || this.elections.find(e => e.isSubscriber)
-                || this.elections[0]
-          }
-        } else {
-          this.electionCourante = undefined
-        }
+        this.selectionnerElectionParDefaut()
       } catch (err) {
         this.error = 'Erreur lors du chargement des élections'
       }
@@ -97,7 +97,7 @@ export const useElectionStore = defineStore('election', {
           return res.data
         }
       } catch (err) {
-        this.error = 'Erreur lors du chargement des élections'
+        this.error = 'Erreur lors du chargement des utilisateurs'
       }
     },
     async resetElection() {
@@ -182,7 +182,7 @@ export const useElectionStore = defineStore('election', {
       await this.chargerElections()
       return res.data
     },
-    async supprimerElection(id,all = true) {
+    async supprimerElection(id) {
       await ownerAPI.deleteElection(id)
       await this.chargerElections()
     },
@@ -242,17 +242,17 @@ export const useElectionStore = defineStore('election', {
     },
     async creerBureau(data) {
       const res = await ownerAPI.createBureau(this.electionCourante.id,data)
-      await this.chargerBureaux(true)
+      await this.chargerBureauxWithUsers()
       return res.data
     },
-    async modifierBureau(id, data, withUsers = false) {
+    async modifierBureau(id, data) {
       const res = await delegueAPI.updateBureau(this.electionCourante.id,id, data)
-      await this.chargerBureaux(true)
+      await this.chargerBureauxWithUsers()
       return res.data
     },
     async supprimerBureau(id) {
       await ownerAPI.deleteBureau(this.electionCourante.id,id)
-      await this.chargerBureaux(true)
+      await this.chargerBureauxWithUsers()
     },
 
     async creerCandidat(data) {
@@ -273,12 +273,12 @@ export const useElectionStore = defineStore('election', {
       this.loading = true
       try {
         const res = await authUserAPI.profile()
-        this.loading = false
         return res.data
       } catch (err) {
         this.error = 'Profil introuvable'
-        this.loading = false
         return null
+      } finally {
+        this.loading = false
       }
     }
   }

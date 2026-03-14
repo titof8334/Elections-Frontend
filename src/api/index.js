@@ -1,28 +1,89 @@
 import axios from 'axios'
-import { getOidcUser } from '@/services/oidc'
+import { getOidcUser, userManager } from '@/services/oidc'
 
 const api = axios.create({
   baseURL: '/api/v1',
   headers: { 'Content-Type': 'application/json' }
 })
 
-// Injecte le token Zitadel sur chaque requête
+// File d'attente pour les requêtes en attente pendant un refresh
+let isRefreshing = false
+let refreshQueue = []
+
+function processQueue(error, token = null) {
+  refreshQueue.forEach(({ resolve, reject }) => error ? reject(error) : resolve(token))
+  refreshQueue = []
+}
+
+async function tryRefresh() {
+  const renewed = await userManager.signinSilent()
+  return renewed.access_token
+}
+
+// Injecte le token sur chaque requête — rafraîchit silencieusement si expiré
 api.interceptors.request.use(async config => {
-  const oidcUser = await getOidcUser()
+  let oidcUser = await getOidcUser()
+
+  if (oidcUser?.expired) {
+    if (isRefreshing) {
+      // Attendre que le refresh en cours se termine
+      const token = await new Promise((resolve, reject) => refreshQueue.push({ resolve, reject }))
+      config.headers.Authorization = `Bearer ${token}`
+      return config
+    }
+    isRefreshing = true
+    try {
+      const token = await tryRefresh()
+      processQueue(null, token)
+      config.headers.Authorization = `Bearer ${token}`
+    } catch (err) {
+      processQueue(err)
+      window.location.href = '/login'
+      return Promise.reject(err)
+    } finally {
+      isRefreshing = false
+    }
+    return config
+  }
+
   if (oidcUser?.access_token) {
     config.headers.Authorization = `Bearer ${oidcUser.access_token}`
   }
   return config
 })
 
-// Redirige vers /login sur 401
+// Sur 401 inattendu : tente un refresh une fois puis rejoue la requête
 api.interceptors.response.use(
   res => res,
-  err => {
-    if (err.response?.status === 401) {
-      window.location.href = '/login'
+  async err => {
+    const original = err.config
+    if (err.response?.status !== 401 || original._retry) {
+      return Promise.reject(err)
     }
-    return Promise.reject(err)
+    original._retry = true
+
+    if (isRefreshing) {
+      return new Promise((resolve, reject) => {
+        refreshQueue.push({ resolve, reject })
+      }).then(token => {
+        original.headers.Authorization = `Bearer ${token}`
+        return api(original)
+      })
+    }
+
+    isRefreshing = true
+    try {
+      const token = await tryRefresh()
+      processQueue(null, token)
+      original.headers.Authorization = `Bearer ${token}`
+      return api(original)
+    } catch (refreshErr) {
+      processQueue(refreshErr)
+      window.location.href = '/login'
+      return Promise.reject(refreshErr)
+    } finally {
+      isRefreshing = false
+    }
   }
 )
 
@@ -45,7 +106,7 @@ export const publicAPI = {
   getCandidats: (electionId) => api.get(`/elections/${electionId}/candidats`),
 }
 
-// ===== UTILISATEUR AUTHENFIFIE =====
+// ===== UTILISATEUR AUTHENTIFIÉ =====
 export const authUserAPI = {
   me: (electionId) => api.get(`/me/elections/${electionId}`),
   updateMe: (data) => api.put('/me',data),
@@ -86,7 +147,7 @@ export const ownerAPI = {
   getUsers:    (electionId,) => api.get(`/owner/elections/${electionId}/users`),
   createUser:  (electionId, data) => api.post(`/owner/elections/${electionId}/users`, data),
   updateUser:  (electionId, id, data) => api.put(`/owner/elections/${electionId}/users/${id}`, data),
-  deleteUser:  (electionId, id) => api.delete(`/owner/elections/${electionId}/users/${id}`),
+  blacklistUser:  (electionId, id) => api.delete(`/owner/elections/${electionId}/users/${id}`),
 
   // Candidats
   createCandidat: (electionId, data) => api.post(`/owner/elections/${electionId}/candidats`, data),

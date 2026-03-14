@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia'
-import { login as oidcLogin, logout as oidcLogout, getOidcUser } from '@/services/oidc'
+import {login as oidcLogin, logout as oidcLogout, getOidcUser, userManager} from '@/services/oidc'
 import api, {authAPI, authUserAPI, delegueAPI, publicAPI} from '@/api'
+
+let _initPromise = null  // hors du store, au niveau module
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -9,9 +11,7 @@ export const useAuthStore = defineStore('auth', {
     // Token d'accès Zitadel courant (utilisé par l'intercepteur axios)
     accessToken: null,
     loading: false,
-    error: null,
-    me: null,
-    role: "aucun"
+    error: null
   }),
 
   getters: {
@@ -37,14 +37,22 @@ export const useAuthStore = defineStore('auth', {
       this.loading = true
       this.error = null
       try {
-        const oidcUser = await getOidcUser()
-        if (!oidcUser || oidcUser.expired) {
-          this.error = oidcUser?.expired
-              ? 'Session expirée, veuillez vous reconnecter.'
-              : 'Session OIDC introuvable (localStorage vide ?).'
-          this.accessToken = null
+        let oidcUser = await getOidcUser()
+
+        if (!oidcUser) {
+          this.error = 'Session OIDC introuvable (localStorage vide ?).';
+          this.accessToken = null;
           this.user = null
           return false
+        }
+        if (oidcUser.expired) {
+          try {
+            oidcUser = await userManager.signinSilent()  // utilise le refresh token
+          } catch {
+            this.error = 'Session expirée, veuillez vous reconnecter.'
+            this.accessToken = null; this.user = null
+            return false
+          }
         }
 
         this.accessToken = oidcUser.access_token
@@ -105,6 +113,10 @@ export const useAuthStore = defineStore('auth', {
       } finally {
         this.loading = false
       }
+    },
+    ensureInit() {
+      if (!_initPromise) _initPromise = this.initFromOidc()
+      return _initPromise
     },
   },
 })

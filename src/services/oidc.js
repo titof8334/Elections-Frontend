@@ -6,8 +6,8 @@ const oidcConfig = {
   redirect_uri: import.meta.env.VITE_ZITADEL_REDIRECT_URI,
   post_logout_redirect_uri: import.meta.env.VITE_ZITADEL_POST_LOGOUT_URI,
 
-  // Scopes demandés à Zitadel
-  scope: 'openid profile email',
+  // Scopes demandés à Zitadel — offline_access pour obtenir un refresh token
+  scope: 'openid profile email offline_access',
 
   // PKCE est activé par défaut dans oidc-client-ts
   response_type: 'code',

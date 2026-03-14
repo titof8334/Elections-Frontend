@@ -11,4 +11,10 @@
 
 <script setup>
 import AppNavbar from '@/components/AppNavbar.vue'
+import { onMounted } from 'vue'
+import { useAuthStore } from '@/stores/auth'
+const auth = useAuthStore()
+onMounted(async () => {
+  await auth.ensureInit()  // ← au lieu de auth.initFromOidc()
+})
 </script>

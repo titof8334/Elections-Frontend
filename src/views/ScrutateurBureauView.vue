@@ -15,6 +15,7 @@
           <span class="badge" :class="store.etatDisplay(etatBureau).color">
             {{ store.etatDisplay(etatBureau).text }}
           </span>
+          <span v-if="isDirty" class="badge badge--or">● Non sauvegardé</span>
         </div>
 
         <div class="alert alert--succes" v-if="messageSucces">{{ messageSucces }}</div>
@@ -193,8 +194,8 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, computed, reactive, onMounted, onUnmounted, watch, nextTick } from 'vue'
+import { useRoute, onBeforeRouteLeave } from 'vue-router'
 import { useElectionStore } from '@/stores/election'
 
 const route = useRoute()
@@ -209,6 +210,7 @@ const savingResultats = ref(false)
 const etatBureau = ref('ferme')
 const updateInscrits = ref(false)
 const updateVotants = ref(false)
+const isDirty = ref(false)
 const heures = [
   { code: '09:00', label: '9h00' },
   { code: '11:00', label: '11h00' },
@@ -252,11 +254,12 @@ const cumulSaisi = computed(() =>
 )
 
 function getParticipation(heure) {
-  return bureau.value?.participations.find(p => p.heure === heure)
+  return bureau.value?.participations?.find(p => p.heure === heure)
 }
 
 function getResultat(candidatId) {
-  return bureau.value?.resultats.find(r => r.candidatId === candidatId)
+  return bureau.value?.resultats?.find(r => r.candidatId === candidatId)
+
 }
 
 function taux(votants) {
@@ -293,6 +296,8 @@ function remplirFormulaires() {
   for (const c of store.candidats) {
     if (resultatForm[c.id] === undefined) resultatForm[c.id] = null
   }
+  // Réinitialise le flag après que les watchers ont traité les changements
+  nextTick(() => { isDirty.value = false })
 }
 
 function showMessage(msg, type = 'succes') {
@@ -300,6 +305,27 @@ function showMessage(msg, type = 'succes') {
   else { messageErreur.value = msg; messageSucces.value = '' }
   setTimeout(() => { messageSucces.value = ''; messageErreur.value = '' }, 3000)
 }
+
+// ── Protection contre la perte de données ──────────────────────────────────
+watch(resultatForm, () => { isDirty.value = true }, { deep: true })
+watch(participationForm, () => { isDirty.value = true }, { deep: true })
+watch(blancs, () => { isDirty.value = true })
+watch(nuls, () => { isDirty.value = true })
+watch(() => formBureau.inscrits, () => { isDirty.value = true })
+watch(() => formBureau.votants, () => { isDirty.value = true })
+
+// Alerte si l'utilisateur tente de naviguer via Vue Router avec des données non sauvegardées
+onBeforeRouteLeave(() => {
+  if (isDirty.value) {
+    return confirm('Des modifications non sauvegardées seront perdues. Quitter quand même ?')
+  }
+})
+
+// Alerte si l'utilisateur ferme l'onglet ou recharge la page
+function handleBeforeUnload(e) {
+  if (isDirty.value) e.preventDefault()
+}
+// ───────────────────────────────────────────────────────────────────────────
 
 async function sauvegarderBureau() {
   savingBureau.value = true
@@ -316,21 +342,48 @@ async function sauvegarderBureau() {
 }
 
 async function majVotants() {
-  bureau.value.depouillementTermine = await store.mettreAJourVotantsBureau(bureau.value.id, formBureau.votants)
-  etatBureau.value = bureau.value.depouillementTermine ? "termine" : "depouillement"
-  bureau.value.votants = formBureau.votants
-  updateVotants.value = false
+  if (formBureau.votants < 0) {
+    showMessage('Le nombre de votants ne peut pas être négatif', 'erreur'); return
+  }
+  if (formBureau.votants > bureau.value.inscrits) {
+    showMessage(`Les votants (${formBureau.votants}) ne peuvent pas dépasser les inscrits (${bureau.value.inscrits})`, 'erreur'); return
+  }
+  try {
+    bureau.value.depouillementTermine = await store.mettreAJourVotantsBureau(bureau.value.id, formBureau.votants)
+    etatBureau.value = bureau.value.depouillementTermine ? "termine" : "depouillement"
+    bureau.value.votants = formBureau.votants
+    updateVotants.value = false
+    isDirty.value = false
+    showMessage('Votants mis à jour ✓')
+  } catch (e) {
+    showMessage(e.response?.data?.reason || 'Erreur', 'erreur')
+  }
+}
+async function majInscrits() {
+  if (!formBureau.inscrits || formBureau.inscrits < 1) {
+    showMessage('Le nombre d\'inscrits doit être au moins égal à 1', 'erreur'); return
+  }
+  try {
+    await store.mettreAJourInscritsBureau(bureau.value.id, formBureau.inscrits )
+    bureau.value.inscrits = formBureau.inscrits
+    updateInscrits.value = false
+    isDirty.value = false
+    showMessage('Inscrits mis à jour ✓')
+  } catch (e) {
+    showMessage(e.response?.data?.reason || 'Erreur', 'erreur')
+  }
 }
 
-async function majInscrits() {
-  await store.mettreAJourInscritsBureau(bureau.value.id, formBureau.inscrits )
-  bureau.value.inscrits = formBureau.inscrits
-  updateInscrits.value = false
-}
 
 async function sauvegarderParticipation(heure) {
   const votants = participationForm[heure]
   if (votants === null || votants === undefined) return
+  if (votants < 0) {
+    showMessage('Le nombre de votants ne peut pas être négatif', 'erreur'); return
+  }
+  if (bureau.value.inscrits && votants > bureau.value.inscrits) {
+    showMessage(`Les votants (${votants}) ne peuvent pas dépasser les inscrits (${bureau.value.inscrits})`, 'erreur'); return
+  }
   try {
     await store.sauvegarderParticipation(bureau.value.id, heure, votants)
     showMessage(`Participation de ${heure} enregistrée ✓`)
@@ -341,7 +394,12 @@ async function sauvegarderParticipation(heure) {
 }
 
 async function sauvegarderResultats(estCumul) {
-  savingResultats.value = true
+  // Validation : total ne dépasse pas les votants attendus
+  const totalSaisi = estCumul ? cumulSaisi.value : totalVoixSaisies.value
+  if (votantsAttendu > 0 && totalSaisi > votantsAttendu) {
+    showMessage(`Le total saisi (${totalSaisi}) dépasse le nombre de votants attendus (${votantsAttendu})`, 'erreur');
+    return
+  }
   const resultat = {
     nuls: nuls.value,
     blancs: blancs.value,
@@ -364,9 +422,15 @@ async function sauvegarderResultats(estCumul) {
         toConfirm = true
       }
     }
+    // Validation : aucune valeur négative
+    if (resultat.nuls < 0 || resultat.blancs < 0 || resultat.resultats.some(r => r.voix < 0)) {
+      showMessage('Les voix, bulletins blancs et nuls ne peuvent pas être négatifs', 'erreur'); return
+    }
+
     if(toConfirm) {
       resultat.estFinal = confirm("Le nombre de votes saisis correspond au nombre de votants attendus. Puis-je clore le scrutin sur ce bureau (OK) ou dois-je continuer (Annuler) ?")
     }
+    savingResultats.value = true
     await store.sauvegarderResultats(resultat)
     showMessage(resultat.estFinal ? 'Résultats finaux enregistrés ✓' : 'Résultats partiels enregistrés ✓')
     remplirFormulaires()
@@ -379,12 +443,17 @@ async function sauvegarderResultats(estCumul) {
 }
 
 onMounted(async () => {
+  window.addEventListener('beforeunload', handleBeforeUnload)
   await store.chargerCandidats()
   await store.chargerBureauSynthese(route.params.id)
   if (bureau.value) {
     remplirFormulaires()
   }
   loading.value = false
+})
+
+onUnmounted(() => {
+  window.removeEventListener('beforeunload', handleBeforeUnload)
 })
 </script>
 

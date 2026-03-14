@@ -132,7 +132,7 @@
           <button v-if="formUser.id"
               class="btn btn--danger btn--sm"
               @click="supprimerUser(formUser.id)"
-              :disabled="formUser.email === 'christ.arnal@laposte.net'"
+              :disabled="formUser.isAdmin"
           >
             Supprimer
           </button>
@@ -189,6 +189,7 @@ function ouvrirModalElection(election = null) {
   showModalElection.value = true
 }
 async function sauvegarderElection() {
+  if (!formElection.nom?.trim()) { showMsg('Le nom de l\'élection est obligatoire', 'erreur'); return }
   try {
     if (formElection.id) {
       await store.modifierElection(formElection.id, { nom: formElection.nom })
@@ -234,6 +235,10 @@ function ouvrirModalUser(user = null) {
   showModalUser.value = true
 }
 async function sauvegarderUser() {
+  if (!formUser.nom?.trim()) { showMsg('Le nom est obligatoire', 'erreur'); return }
+  if (!formUser.prenom?.trim()) { showMsg('Le prénom est obligatoire', 'erreur'); return }
+  if (!formUser.email?.trim()) { showMsg("L'email est obligatoire", 'erreur'); return }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formUser.email)) { showMsg("L'email n'est pas valide", 'erreur'); return }
   try {
     const payload = {
       nom: formUser.nom,

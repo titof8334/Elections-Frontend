@@ -81,7 +81,7 @@
           </template>
 
           <div style="display: flex; justify-content: flex-end; margin-top: 1.5rem">
-            <button type="button" class="btn btn--primaire" @click="sauvegarderElection">
+            <button v-if="form.election" type="button" class="btn btn--primaire" @click="sauvegarderElection">
               Mettre à jour mes choix
             </button>
           </div>
@@ -118,10 +118,10 @@ const form = reactive({
 function remplirFormulaire() {
   if (!user.value) return
   const election = store.electionCourante
-    ? user.value.elections.find(e => e.electionId == store.electionCourante.id)
+    ? user.value.elections.find(e => e.electionId === store.electionCourante.id)
     : undefined
   let bureau = election?.dispBureauId
-    ? election.tousBureaux.find(b => b.id == election.dispBureauId)
+    ? election.tousBureaux.find(b => b.id === election.dispBureauId)
     : (election?.tousBureaux?.length ? election.tousBureaux[0] : undefined)
   form.nom           = user.value.nom ?? ''
   form.prenom           = user.value.prenom ?? ''
@@ -140,7 +140,7 @@ const bureauxLabel = computed(() => {
     return ids
         .map(id => {
           const b = form.election.tousBureaux.find(b => b.id === id)
-          return b.numero + ' - ' + b.nom
+          return b ? b.numero + ' - ' + b.nom : ""
         })
         .join(', ')
   }

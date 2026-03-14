@@ -67,21 +67,14 @@ const router = createRouter({
   routes
 })
 
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   const auth = useAuthStore()
+  await auth.ensureInit()  // attend l'init une seule fois
 
   document.title = `${to.meta.title || 'Élections'} — Dépouillement`
-
-  if (to.meta.requiresAdmin && !auth.isAdmin) {
-    return next('/login')
-  }
-  if (to.meta.requiresAuth && !auth.isAuthenticated) {
-    return next('/login')
-  }
-  if (to.meta.guestOnly && auth.isAuthenticated) {
-    return next('/')
-  }
+  if (to.meta.requiresAdmin && !auth.isAdmin) return next('/')
+  if (to.meta.requiresAuth && !auth.isAuthenticated) return next('/login')
+  if (to.meta.guestOnly && auth.isAuthenticated) return next('/')
   next()
 })
-
 export default router
