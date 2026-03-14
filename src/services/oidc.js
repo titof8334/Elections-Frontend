@@ -15,7 +15,8 @@ const oidcConfig = {
   // Stockage de la session dans localStorage
   userStore: new WebStorageStateStore({ store: window.localStorage }),
 
-  // Renouvellement silencieux du token (optionnel, nécessite une iframe)
+  // Utilise le refresh token pour le renouvellement silencieux (pas d'iframe nécessaire)
+  useRefreshTokens: true,
   automaticSilentRenew: false,
 }
 

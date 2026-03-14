@@ -38,7 +38,7 @@ api.interceptors.request.use(async config => {
       config.headers.Authorization = `Bearer ${token}`
     } catch (err) {
       processQueue(err)
-      window.location.href = '/login'
+      await userManager.removeUser()  // supprime le token périmé du localStorage
       return Promise.reject(err)
     } finally {
       isRefreshing = false
@@ -79,7 +79,7 @@ api.interceptors.response.use(
       return api(original)
     } catch (refreshErr) {
       processQueue(refreshErr)
-      window.location.href = '/login'
+      await userManager.removeUser()  // supprime le token périmé du localStorage
       return Promise.reject(refreshErr)
     } finally {
       isRefreshing = false

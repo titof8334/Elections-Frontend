@@ -51,6 +51,7 @@ export const useAuthStore = defineStore('auth', {
           } catch {
             this.error = 'Session expirée, veuillez vous reconnecter.'
             this.accessToken = null; this.user = null
+            await userManager.removeUser()  // supprime le token périmé du localStorage
             return false
           }
         }
